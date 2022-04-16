@@ -1,46 +1,31 @@
 <img src="./figurl.png" width="200px" />
 
-# figurl
+# figurl2-gui
 
-Create shareable, interactive, live figures on the distributed web using Python
+This is the front-end/web app for [figurl2](https://github.com/scratchrealm/figurl2). It uses the following:
 
-See also [kachery-cloud](https://github.com/scratchrealm/kachery-cloud)
+* [Typescript](https://www.typescriptlang.org/)
+* [ReactJS](https://reactjs.org/) and [create-react-app](https://create-react-app.dev/)
+* [Vercel](https://vercel.com)
+* [Google Cloud Firestore](https://firebase.google.com/docs/firestore)
+* [Kachery-cloud](https://github.com/scratchrealm/kachery-cloud)
 
-## Quick example
+## Local development
 
-```python
-# You'll first need to set up and configure kachery-cloud
+Requires a recent version of [npm](https://www.npmjs.com/) and [yarn](https://www.npmjs.com/package/yarn).
 
-# pip install altair vega_datasets
-
-import figurl as fig
-
-from vega_datasets import data
-stocks = data.stocks()
-
-import altair as alt
-x = alt.Chart(stocks).mark_line().encode(
-  x='date:T',
-  y='price',
-  color='symbol'
-).interactive(bind_y=False)
-
-url = fig.Altair(x).url(label='scatter')
-print(url)
-
-# Output: 
-# https://figurl.org/f?v=gs://figurl/vegalite-1&d=ipfs://bafkreierzdetqnlhxfczsz6zqg6psvjobzqidtgmhmf7a4z27gjkml32xq&label=scatter
+```
+yarn install
+vercel dev
 ```
 
-[Resulting scatter plot](https://figurl.org/f?v=gs://figurl/vegalite-1&d=ipfs://bafkreierzdetqnlhxfczsz6zqg6psvjobzqidtgmhmf7a4z27gjkml32xq&label=scatter) with data stored in [Filebase](https://filebase.com/) and pinned on [IPFS](https://ipfs.io/). 
+The project must be registered on vercel and certain environment variables must be set for the vercel project (not yet documented). See [vercel.com](https://vercel.com)
 
-## Introduction
+## Deployment
 
-[Introduction to Figurl](https://github.com/magland/figurl/wiki/Introduction-to-Figurl)
-
-## Getting started
-
-[Getting started with Figurl](https://github.com/magland/figurl/wiki/Getting-Started-with-Figurl)
+```
+vercel --prod
+```
 
 ## Authors
 
