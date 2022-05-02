@@ -2,6 +2,7 @@ import useGoogleSignInClient from 'components/googleSignIn/useGoogleSignInClient
 import { randomAlphaString } from 'components/misc/randomAlphaString';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
 import useBackendId from 'figurl/useBackendId';
+import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -84,6 +85,7 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     const [figureId, setFigureId] = useState<string>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
     const googleSignInClient = useGoogleSignInClient()
+    const taskManager = useKacheryCloudTaskManager()
     useEffect(() => {
         if (!figureData) return
         if (!viewUrl) return
@@ -96,10 +98,11 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             viewUrl,
             figureData,
             iframeElement,
-            googleSignInClient
+            googleSignInClient,
+            taskManager
         })
         setFigureId(id)
-    }, [viewUrl, figureData, projectId, backendId, googleSignInClient])
+    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager])
     if (!figureData) {
         return <div>Waiting for figure data</div>
     }

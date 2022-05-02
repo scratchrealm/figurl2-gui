@@ -12,7 +12,7 @@ import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 (window as any).figurlFileData = {}
 
 class FigureInterface {
-    #taskManager: KacheryCloudTaskManager
+    #taskManager: KacheryCloudTaskManager | undefined
     #taskJobs: {[key: string]: TaskJob<any>} = {}
     #feeds: {[key: string]: KacheryCloudFeed} = {}
     constructor(private a: {
@@ -22,9 +22,10 @@ class FigureInterface {
         viewUrl: string,
         figureData: any,
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
-        googleSignInClient: GoogleSignInClient
+        googleSignInClient: GoogleSignInClient,
+        taskManager?: KacheryCloudTaskManager
     }) {
-        this.#taskManager = new KacheryCloudTaskManager({projectId: a.projectId || ''})
+        this.#taskManager = a.taskManager
         window.addEventListener('message', e => {
             const msg = e.data
             if (isMessageToParent(msg)) {
@@ -110,6 +111,9 @@ class FigureInterface {
     async handleInitiateTaskRequest(request: InitiateTaskRequest): Promise<InitiateTaskResponse> {
         if (!this.a.projectId) {
             throw Error('projectId cannot be empty for initiating a task request')
+        }
+        if (!this.#taskManager) {
+            throw Error('not taskManager when initiating a task request')
         }
         const taskJob = this.#taskManager.runTask({taskType: request.taskType, taskName: request.taskName, taskInput: request.taskInput})
         if (!taskJob) throw Error('Unexpected: undefined task job')
