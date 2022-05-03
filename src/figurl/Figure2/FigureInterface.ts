@@ -6,7 +6,8 @@ import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
 import ipfsDownload from './ipfsDownload'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
+import kacheryCloudGetMutable from './kacheryCloudGetMutable'
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 (window as any).figurlFileData = {}
@@ -65,6 +66,15 @@ class FigureInterface {
                         }
                         else if (request.type === 'subscribeToFeed') {
                             this.handleSubscribeToFeedRequest(request).then(response => {
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
+                            })
+                        }
+                        else if (request.type === 'getMutable') {
+                            this.handleGetMutableRequest(request).then(response => {
                                 this._sendMessageToChild({
                                     type: 'figurlResponse',
                                     requestId,
@@ -165,6 +175,17 @@ class FigureInterface {
             messages: feed.getMessages()
         }
         return response
+    }
+    async handleGetMutableRequest(request: GetMutableRequest): Promise<GetMutableResponse> {
+        if (!this.a.projectId) {
+            throw Error('projectId cannot be empty for get mutable')
+        }
+        let {key} = request
+        const value = await kacheryCloudGetMutable(key, this.a.projectId)
+        return {
+            type: 'getMutable',
+            value: value !== undefined ? value : null
+        }
     }
     _sendMessageToChild(msg: MessageToChild) {
         if (!this.a.iframeElement.current) {

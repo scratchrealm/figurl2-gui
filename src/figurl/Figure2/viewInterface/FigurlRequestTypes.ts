@@ -1,7 +1,5 @@
-import { isJSONObject, isString, JSONObject } from "./kacheryTypes"
-import { isArrayOf } from "./kacheryTypes"
 import { isTaskJobStatus, isTaskType, TaskJobStatus, TaskType } from "./MessageToChildTypes"
-import validateObject, { isEqualTo, isOneOf, optional } from "./validateObject"
+import validateObject, { isArrayOf, isEqualTo, isJSONObject, isNull, isOneOf, isString, JSONObject, optional } from "./validateObject"
 
 // getFigureData
 
@@ -50,6 +48,32 @@ export const isGetFileDataResponse = (x: any): x is GetFileDataResponse => {
     return validateObject(x, {
         type: isEqualTo('getFileData'),
         fileData: () => (true)
+    })
+}
+
+// getMutable
+
+export type GetMutableRequest = {
+    type: 'getMutable'
+    key: string
+}
+
+export const isGetMutableRequest = (x: any): x is GetMutableRequest => {
+    return validateObject(x, {
+        type: isEqualTo('getMutable'),
+        key: isString
+    })
+}
+
+export type GetMutableResponse = {
+    type: 'getMutable'
+    value: string | null
+}
+
+export const isGetMutableResponse = (x: any): x is GetMutableResponse => {
+    return validateObject(x, {
+        type: isEqualTo('getMutable'),
+        value: isOneOf([isNull, isString])
     })
 }
 
@@ -120,6 +144,7 @@ export const isSubscribeToFeedResponse = (x: any): x is SubscribeToFeedResponse 
 export type FigurlRequest =
     GetFigureDataRequest |
     GetFileDataRequest |
+    GetMutableRequest |
     InitiateTaskRequest |
     SubscribeToFeedRequest
 
@@ -127,6 +152,7 @@ export const isFigurlRequest = (x: any): x is FigurlRequest => {
     return isOneOf([
         isGetFigureDataRequest,
         isGetFileDataRequest,
+        isGetMutableRequest,
         isInitiateTaskRequest,
         isSubscribeToFeedRequest
     ])(x)
@@ -135,6 +161,7 @@ export const isFigurlRequest = (x: any): x is FigurlRequest => {
 export type FigurlResponse =
     GetFigureDataResponse |
     GetFileDataResponse |
+    GetMutableResponse |
     InitiateTaskResponse |
     SubscribeToFeedResponse
 
@@ -142,6 +169,7 @@ export const isFigurlResponse = (x: any): x is FigurlResponse => {
     return isOneOf([
         isGetFigureDataResponse,
         isGetFileDataResponse,
+        isGetMutableResponse,
         isInitiateTaskResponse,
         isSubscribeToFeedResponse
     ])(x)

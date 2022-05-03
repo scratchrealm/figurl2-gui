@@ -237,7 +237,7 @@ export type SetMutableRequest = {
         type: 'setMutable'
         timestamp: number
         mutableKey: string
-        cid: string
+        value: string
         projectId?: string
     }
     fromClientId: NodeId
@@ -250,7 +250,7 @@ export const isSetMutableRequest = (x: any): x is SetMutableRequest => {
             type: isEqualTo('setMutable'),
             timestamp: isNumber,
             mutableKey: isString,
-            cid: isString,
+            value: isString,
             projectId: optional(isString)
         })
     }
@@ -306,7 +306,7 @@ export const isGetMutableRequest = (x: any): x is GetMutableRequest => {
 export type GetMutableResponse = {
     type: 'getMutable'
     found: boolean
-    cid?: string
+    value?: string
     projectId?: string
 }
 
@@ -314,7 +314,7 @@ export const isGetMutableResponse = (x: any): x is GetMutableResponse => {
     return _validateObject(x, {
         type: isEqualTo('getMutable'),
         found: isBoolean,
-        cid: optional(isString),
+        value: optional(isString),
         projectId: optional(isString)
     })
 }
@@ -589,7 +589,7 @@ export type AppendFeedMessagesRequest = {
         type: 'appendFeedMessages'
         timestamp: number
         feedId: string
-        messages: JSONObject[]
+        messagesJson: string[] // we send the JSON contents to avoid ambiguity with the signature
     }
     fromClientId: NodeId
     signature: Signature
@@ -601,7 +601,7 @@ export const isAppendFeedMessagesRequest = (x: any): x is AppendFeedMessagesRequ
             type: isEqualTo('appendFeedMessages'),
             timestamp: isNumber,
             feedId: isString,
-            messages: isArrayOf(isJSONObject)
+            messagesJson: isArrayOf(isString)
         })
     }
     return _validateObject(x, {
