@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
 import { GetMutableRequest, isGetMutableResponse } from 'types/KacherycloudRequest';
 
 const kacheryCloudGetMutable = async (key: string, projectId: string) => {
