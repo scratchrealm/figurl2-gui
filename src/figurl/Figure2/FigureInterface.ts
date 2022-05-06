@@ -156,9 +156,6 @@ class FigureInterface {
         const feed = kacheryCloudFeedManager.getFeed(request.feedId)
         if (!(request.feedId in this.#feeds)) {
             this.#feeds[request.feedId] = feed
-            feed.onMessagesUpdated(() => {
-
-            })
             feed.onMessagesUpdated((startMessageNumber, messages) => {
                 if (messages.length === 0) return
                 const msg: NewFeedMessagesMessage = {
