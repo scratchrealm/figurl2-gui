@@ -9,7 +9,7 @@ const IntroSection: FunctionComponent<Props> = () => {
             <p>&nbsp;</p>
             <img src="/figurl.png" alt="figurl" width="200px" />
             <p>Shareable, interactive, computation-backed figures</p>
-            <p><a href="https://github.com/magland/figurl" target="_blank" rel="noreferrer">Read about Figurl</a></p>
+            <p><a href="https://github.com/scratchrealm/figurl2" target="_blank" rel="noreferrer">Read about Figurl</a></p>
         </div>
     )
 }

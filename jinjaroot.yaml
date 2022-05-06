@@ -4,6 +4,6 @@ webAppProjectVersion: 0.2.0
 projectAuthor: Jeremy Magland and Jeff Soules
 projectAuthorEmail: jmagland@flatironinstitute.org
 projectDescription: Web views of figures generated from Python
-projectUrl: https://github.com/magland/figurl
-projectBugTrackerUrl: https://github.com/magland/figurl/issues
+projectUrl: https://github.com/scratchrealm/figurl2-gui
+projectBugTrackerUrl: https://github.com/magland/scratchrealm/figurl2-gui/issues
 pythonPackageDir: ./python
