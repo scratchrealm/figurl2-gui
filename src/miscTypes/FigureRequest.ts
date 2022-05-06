@@ -20,7 +20,7 @@ export type Figure = {
     ownerId: string
     folder: string
     queryString: string
-    projectId: string
+    projectId?: string
     dataUri: string
     viewUri: string
     label: string
@@ -34,7 +34,7 @@ export const isFigure = (y: any): y is Figure => {
         ownerId: isString,
         folder: isString,
         queryString: isString,
-        projectId: isString,
+        projectId: optional(isString),
         dataUri: isString,
         viewUri: isString,
         label: isString,

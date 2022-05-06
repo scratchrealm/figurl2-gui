@@ -24,7 +24,6 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose}) => {
         if (!googleIdToken) return
         if (!figureDataUri) return
         if (!viewUri) return
-        if (!projectId) return
         const query = QueryString.parse(queryString)
         query['label'] = editLabel
         const queryString2 = createQueryString(query).slice(1)
