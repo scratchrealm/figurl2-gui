@@ -47,6 +47,12 @@ export const isFindIpfsFileResponse = (x: any): x is FindIpfsFileResponse => {
 }
 
 const ipfsDownload = async (cid: string) => {
+    const downloadUrl = await ipfsDownloadUrl(cid)
+    const y = await axios.get(downloadUrl, {responseType: 'json'})
+    return y.data
+}
+
+export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
     // const url = 'http://localhost:3001/api/kacherycloud'
     const req: FindIpfsFileRequest = {
@@ -69,8 +75,8 @@ const ipfsDownload = async (cid: string) => {
     else {
         downloadUrl = `https://cloudflare-ipfs.com/ipfs/${cid}`
     }
-    const y = await axios.get(downloadUrl, {responseType: 'json'})
-    return y.data
+    return downloadUrl
 }
+
 
 export default ipfsDownload

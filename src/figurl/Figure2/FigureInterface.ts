@@ -5,9 +5,9 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
 import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
-import ipfsDownload from './ipfsDownload'
+import ipfsDownload, { ipfsDownloadUrl } from './ipfsDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 (window as any).figurlFileData = {}
@@ -48,6 +48,15 @@ class FigureInterface {
                         }
                         else if (request.type === 'getFileData') {
                             this.handleGetFileDataRequest(request).then(response => {
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
+                            })
+                        }
+                        else if (request.type === 'getFileDataUrl') {
+                            this.handleGetFileDataUrlRequest(request).then(response => {
                                 this._sendMessageToChild({
                                     type: 'figurlResponse',
                                     requestId,
@@ -102,7 +111,7 @@ class FigureInterface {
         let {uri} = request
         let data
         if (uri.startsWith('ipfs://')) {
-            const a = uri.split('/')
+            const a = uri.split('?')[0].split('/')
             const cid = a[2]
 
             data = await ipfsDownload(cid)
@@ -116,6 +125,25 @@ class FigureInterface {
         return {
             type: 'getFileData',
             fileData: dataDeserialized
+        }
+    }
+    async handleGetFileDataUrlRequest(request: GetFileDataUrlRequest): Promise<GetFileDataUrlResponse> {
+        let {uri} = request
+        if (uri.startsWith('ipfs://')) {
+            const a = uri.split('?')[0].split('/')
+            const cid = a[2]
+
+            const url = await ipfsDownloadUrl(cid)
+            if (!url) {
+                throw Error('Unable to get ipfs download url')
+            }
+            return {
+                type: 'getFileDataUrl',
+                fileDataUrl: url
+            }
+        }
+        else {
+            throw Error(`Invalid uri: ${uri}`)
         }
     }
     async handleInitiateTaskRequest(request: InitiateTaskRequest): Promise<InitiateTaskResponse> {

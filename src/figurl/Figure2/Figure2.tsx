@@ -23,7 +23,7 @@ export const useFigureData = (dataUri: string | undefined) => {
             if (!dataUri) return
             let data
             if (dataUri.startsWith('ipfs://')) {
-                const a = dataUri.split('/')
+                const a = dataUri.split('?')[0].split('/')
                 const cid = a[2]
                 data = await ipfsDownload(cid)
             }
