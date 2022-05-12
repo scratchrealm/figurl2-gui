@@ -75,7 +75,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome }) => {
                 <span style={{marginLeft: 'auto'}} />
                 {
                     signedIn && (
-                        <span style={{fontFamily: 'courier', color: 'lightgray'}}>{userId}</span>
+                        <span style={{fontFamily: 'courier', color: 'lightgray'}}>{userId}&nbsp;&nbsp;</span>
                     )
                 }
                 {/* <span style={{paddingBottom: 0, color: 'white'}}>
@@ -83,6 +83,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome }) => {
                 </span> */}
                 <span style={{paddingBottom: 0, color: 'white'}}>
                     <TaskMonitorControl onOpen={openTaskMonitor} color="white" />
+                    &nbsp;
                 </span>
                 {
                     routePath === '/f' && (
