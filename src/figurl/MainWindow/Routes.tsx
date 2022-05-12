@@ -10,12 +10,13 @@ type Props = {
 
 const Routes: FunctionComponent<Props> = (props) => {
     const {width, height, homePageProps} = props
-    const {routePath} = useRoute2()
+    const {routePath, label} = useRoute2()
 
     if (routePath === '/about') {
         return <div>About</div>
     }
     else if (routePath === '/f') {
+        document.title = label
         return (
             <Figure2
                 width={width}
@@ -24,6 +25,7 @@ const Routes: FunctionComponent<Props> = (props) => {
         )
     }
     else {
+        document.title = 'figurl'
         return <HomePage {...homePageProps} />
     }
 }
