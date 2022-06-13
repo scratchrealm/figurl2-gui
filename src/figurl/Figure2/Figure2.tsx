@@ -8,7 +8,7 @@ import QueryString from 'querystring';
 import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import FigureInterface from './FigureInterface';
-import ipfsDownload from './ipfsDownload';
+import ipfsDownload, { fileDownload } from './ipfsDownload';
 import urlFromUri from './urlFromUri';
 
 type Props = {
@@ -27,8 +27,13 @@ export const useFigureData = (dataUri: string | undefined) => {
                 const cid = a[2]
                 data = await ipfsDownload(cid)
             }
+            else if (dataUri.startsWith('sha1://')) {
+                const a = dataUri.split('?')[0].split('/')
+                const sha1 = a[2]
+                data = await fileDownload('sha1', sha1)
+            }
             else {
-                throw Error('Unexpected data URI')
+                throw Error(`Unexpected data URI: ${dataUri}`)
             }
             data = await deserializeReturnValue(data)
             setFigureData(data)

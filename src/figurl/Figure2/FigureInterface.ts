@@ -5,7 +5,7 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
 import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
-import ipfsDownload, { ipfsDownloadUrl } from './ipfsDownload'
+import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './ipfsDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
@@ -116,6 +116,12 @@ class FigureInterface {
 
             data = await ipfsDownload(cid)
         }
+        else if (uri.startsWith('sha1://')) {
+            const a = uri.split('?')[0].split('/')
+            const sha1 = a[2]
+
+            data = await fileDownload('sha1', sha1)
+        }
         else {
             throw Error(`Invalid uri: ${uri}`)
         }
@@ -136,6 +142,19 @@ class FigureInterface {
             const url = await ipfsDownloadUrl(cid)
             if (!url) {
                 throw Error('Unable to get ipfs download url')
+            }
+            return {
+                type: 'getFileDataUrl',
+                fileDataUrl: url
+            }
+        }
+        else if (uri.startsWith('sha1://')) {
+            const a = uri.split('?')[0].split('/')
+            const sha1 = a[2]
+
+            const url = await fileDownloadUrl('sha1', sha1)
+            if (!url) {
+                throw Error('Unable to get file download url')
             }
             return {
                 type: 'getFileDataUrl',
