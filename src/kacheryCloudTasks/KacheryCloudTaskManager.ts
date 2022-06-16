@@ -117,7 +117,7 @@ class KacheryCloudTaskManager {
         if (resp.type !== 'getProjectBucketBaseUrl') {
             throw Error('Unexpected response to getProjectBucketBaseUrl')
         }
-        this.#projectBucketBaseUrl = resp.bucketBaseUrl
+        this.#projectBucketBaseUrl = resp.projectBaseUrl
         return this.#projectBucketBaseUrl as string
     }
 }

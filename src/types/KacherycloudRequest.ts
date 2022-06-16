@@ -84,14 +84,14 @@ export const isGetProjectBucketBaseUrlRequest = (x: any): x is GetProjectBucketB
 export type GetProjectBucketBaseUrlResponse = {
     type: 'getProjectBucketBaseUrl'
     found: boolean
-    bucketBaseUrl?: string
+    projectBaseUrl?: string
 }
 
 export const isGetProjectBucketBaseUrlResponse = (x: any): x is GetProjectBucketBaseUrlResponse => {
     return _validateObject(x, {
         type: isEqualTo('getProjectBucketBaseUrl'),
         found: isBoolean,
-        bucketBaseURl: optional(isString)
+        projectBaseUrl: optional(isString)
     })
 }
 
