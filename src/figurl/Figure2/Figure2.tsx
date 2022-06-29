@@ -32,6 +32,11 @@ export const useFigureData = (dataUri: string | undefined) => {
                 const sha1 = a[2]
                 data = await fileDownload('sha1', sha1)
             }
+            else if (dataUri.startsWith('sha1-enc://')) {
+                const a = dataUri.split('?')[0].split('/')
+                const sha1_enc_path = a[2]
+                data = await fileDownload('sha1-enc', sha1_enc_path)
+            }
             else {
                 throw Error(`Unexpected data URI: ${dataUri}`)
             }

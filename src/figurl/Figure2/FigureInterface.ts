@@ -122,6 +122,12 @@ class FigureInterface {
 
             data = await fileDownload('sha1', sha1)
         }
+        else if (uri.startsWith('sha1-enc://')) {
+            const a = uri.split('?')[0].split('/')
+            const sha1_enc_path = a[2]
+
+            data = await fileDownload('sha1-enc', sha1_enc_path)
+        }
         else {
             throw Error(`Invalid uri: ${uri}`)
         }
@@ -153,6 +159,19 @@ class FigureInterface {
             const sha1 = a[2]
 
             const url = await fileDownloadUrl('sha1', sha1)
+            if (!url) {
+                throw Error('Unable to get file download url')
+            }
+            return {
+                type: 'getFileDataUrl',
+                fileDataUrl: url
+            }
+        }
+        else if (uri.startsWith('sha1-enc://')) {
+            const a = uri.split('?')[0].split('/')
+            const sha1_enc_path = a[2]
+
+            const url = await fileDownloadUrl('sha1-enc', sha1_enc_path)
             if (!url) {
                 throw Error('Unable to get file download url')
             }
