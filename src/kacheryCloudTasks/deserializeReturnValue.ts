@@ -42,6 +42,12 @@ const deserializeReturnValue = async (x: any): Promise<any> => {
             else if (dtype === 'uint8') {
                 return applyShape(new Uint8Array(dataBuffer.buffer), shape)
             }
+            else if (dtype === 'uint32') {
+                return applyShape(new Uint32Array(dataBuffer.buffer), shape)
+            }
+            else if (dtype === 'uint16') {
+                return applyShape(new Uint16Array(dataBuffer.buffer), shape)
+            }
             else if (dtype === 'float64') {
                 if (shapeProduct(shape) > 100) {
                     console.info('WARNING: Using float64 array. It may be a good idea to cast the array to float32 if you do not need the full precision', shape)
@@ -81,7 +87,7 @@ const gunzipAsync = async (x: ArrayBuffer): Promise<Buffer> => {
     })
 }
 
-const applyShape = (x: Float32Array | Int32Array | Int16Array | Uint8Array | Float64Array, shape: number[]): number[] | number[][] | number[][][] | number[][][][] | number[][][][][] => {
+const applyShape = (x: Float32Array | Int32Array | Int16Array | Uint8Array | Uint16Array | Uint32Array | Float64Array, shape: number[]): number[] | number[][] | number[][][] | number[][][][] | number[][][][][] => {
     if (shape.length === 1) {
         if (shape[0] !== x.length) throw Error('Unexpected length of array')
         return Array.from(x)
