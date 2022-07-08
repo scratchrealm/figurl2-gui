@@ -110,6 +110,14 @@ class FigureInterface {
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
         let {uri} = request
         let data
+        const onProgress: (a: {loaded: number, total: number}) => void = ({loaded, total}) => {
+            this._sendMessageToChild({
+                type: 'fileDownloadProgress',
+                uri,
+                loaded,
+                total
+            })
+        }
         if (uri.startsWith('ipfs://')) {
             const a = uri.split('?')[0].split('/')
             const cid = a[2]
@@ -120,13 +128,13 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            data = await fileDownload('sha1', sha1)
+            data = await fileDownload('sha1', sha1, onProgress)
         }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            data = await fileDownload('sha1-enc', sha1_enc_path)
+            data = await fileDownload('sha1-enc', sha1_enc_path, onProgress)
         }
         else {
             throw Error(`Invalid uri: ${uri}`)

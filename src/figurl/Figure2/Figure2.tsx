@@ -9,6 +9,7 @@ import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useS
 import { useHistory, useLocation } from 'react-router-dom';
 import FigureInterface from './FigureInterface';
 import ipfsDownload, { fileDownload } from './ipfsDownload';
+import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
 
 type Props = {
@@ -16,8 +17,24 @@ type Props = {
     height: number
 }
 
+type Progress = {
+    onProgress: (callback: (a: {loaded: number, total: number}) => void) => void
+}
+
 export const useFigureData = (dataUri: string | undefined) => {
     const [figureData, setFigureData] = useState<any>()
+    const {progress, reportProgress} = useMemo(() => {
+        let _callback: (a: {loaded: number, total: number}) => void = ({loaded, total}) => {}
+        const reportProgress = (a: {loaded: number, total: number}) => {
+            _callback(a)
+        }
+        const progress: Progress = {
+            onProgress: (callback: (a: {loaded: number, total: number}) => void) => {
+                _callback = callback
+            }
+        }
+        return {progress, reportProgress}
+    }, [])
     useEffect(() => {
         ;(async () => {
             if (!dataUri) return
@@ -30,12 +47,12 @@ export const useFigureData = (dataUri: string | undefined) => {
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1)
+                data = await fileDownload('sha1', sha1, reportProgress)
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path)
+                data = await fileDownload('sha1-enc', sha1_enc_path, reportProgress)
             }
             else {
                 throw Error(`Unexpected data URI: ${dataUri}`)
@@ -43,8 +60,8 @@ export const useFigureData = (dataUri: string | undefined) => {
             data = await deserializeReturnValue(data)
             setFigureData(data)
         })()
-    }, [dataUri])
-    return figureData
+    }, [dataUri, reportProgress])
+    return {figureData, progress}
 }
 
 export const useRoute2 = () => {
@@ -91,11 +108,17 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     const {viewUrl, figureDataUri, projectId} = useRoute2()
     const {backendIdForProject} = useBackendId()
     const backendId = projectId ? backendIdForProject(projectId) : null
-    const figureData = useFigureData(figureDataUri)
+    const {figureData, progress} = useFigureData(figureDataUri)
     const [figureId, setFigureId] = useState<string>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
     const googleSignInClient = useGoogleSignInClient()
     const taskManager = useKacheryCloudTaskManager()
+    const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
+    useEffect(() => {
+        progress.onProgress(({loaded, total}) => {
+            setProgressValue({loaded, total})
+        })
+    }, [progress])
     useEffect(() => {
         if (!figureData) return
         if (!viewUrl) return
@@ -114,7 +137,12 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
         setFigureId(id)
     }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager])
     if (!figureData) {
-        return <div>Waiting for figure data</div>
+        return (
+            <ProgressComponent
+                loaded={progressValue?.loaded}
+                total={progressValue?.total}
+            />
+        )
     }
     if (!figureId) {
         return <div>Waiting for figure ID</div>
