@@ -55,6 +55,66 @@ export const isFinalizeIpfsUploadLogItem = (x: any): x is FinalizeIpfsUploadLogI
 
 ///////////////////////////////////////////////////////////////////////////
 
+export type InitiateFileUploadLogItem = {
+    type: 'initiateFileUpload'
+    clientId: NodeId
+    projectId: string
+    userId: UserId
+    size: number
+    objectKey: string
+    hashAlg: string
+    hash: string
+    timestamp: number
+}
+
+export const isInitiateFileUploadLogItem = (x: any): x is InitiateFileUploadLogItem => (
+    _validateObject(x, {
+        type: isEqualTo('initiateFileUpload'),
+        clientId: isNodeId,
+        projectId: isString,
+        userId: isUserId,
+        size: isNumber,
+        objectKey: isString,
+        hashAlg: isString,
+        hash: isString,
+        timestamp: isNumber
+    })
+)
+
+///////////////////////////////////////////////////////////////////////////
+
+export type FinalizeFileUploadLogItem = {
+    type: 'finalizeFileUpload'
+    clientId: NodeId
+    projectId: string
+    userId: UserId
+    size: number
+    objectKey: string
+    hashAlg: string
+    hash: string
+    url: string
+    alreadyExisted: boolean
+    timestamp: number
+}
+
+export const isFinalizeFileUploadLogItem = (x: any): x is FinalizeFileUploadLogItem => (
+    _validateObject(x, {
+        type: isEqualTo('finalizeFileUpload'),
+        clientId: isNodeId,
+        projectId: isString,
+        userId: isUserId,
+        size: isNumber,
+        objectKey: isString,
+        hashAlg: isString,
+        hash: isString,
+        url: isString,
+        alreadyExisted: isBoolean,
+        timestamp: isNumber
+    })
+)
+
+///////////////////////////////////////////////////////////////////////////
+
 export type FindIpfsFileLogItem = {
     type: 'findIpfsFile'
     found: boolean,
@@ -83,13 +143,43 @@ export const isfindIpfsFileLogItem = (x: any): x is FindIpfsFileLogItem => (
 
 ///////////////////////////////////////////////////////////////////////////
 
+export type FindFileLogItem = {
+    type: 'findFile'
+    found: boolean,
+    hashAlg: string,
+    hash: string,
+    clientId?: NodeId
+    projectId?: string
+    userId?: UserId
+    size?: number
+    url?: string
+    timestamp: number
+}
+
+export const isfindFileLogItem = (x: any): x is FindFileLogItem => (
+    _validateObject(x, {
+        type: isEqualTo('findFile'),
+        found: isBoolean,
+        hashAlg: isString,
+        hash: isString,
+        clientId: optional(isNodeId),
+        projectId: optional(isString),
+        userId: optional(isUserId),
+        size: optional(isNumber),
+        url: optional(isString),
+        timestamp: isNumber
+    })
+)
+
+///////////////////////////////////////////////////////////////////////////
+
 export type SetMutableLogItem = {
     type: 'setMutable'
     clientId: NodeId
     projectId: string
     userId: UserId
     mutableKey: string
-    cid: string
+    value: string
     alreadyExisted: boolean
     timestamp: number
 }
@@ -101,7 +191,7 @@ export const isSetMutableLogItem = (x: any): x is SetMutableLogItem => (
         projectId: isString,
         userId: isUserId,
         mutableKey: isString,
-        cid: isString,
+        value: isString,
         alreadyExisted: isBoolean,
         timestamp: isNumber
     })
@@ -116,7 +206,7 @@ export type GetMutableLogItem = {
     projectId: string
     userId?: UserId
     mutableKey: string
-    cid?: string
+    value?: string
     timestamp: number
 }
 
@@ -128,7 +218,7 @@ export const isGetMutableLogItem = (x: any): x is GetMutableLogItem => (
         projectId: isString,
         userId: optional(isUserId),
         mutableKey: isString,
-        cid: optional(isString),
+        value: optional(isString),
         timestamp: isNumber
     })
 )
@@ -195,9 +285,9 @@ export const isFinalizeTaskResultUploadLogItem = (x: any): x is FinalizeTaskResu
 
 export type SubscribeToPubsubChannelLogItem = {
     type: 'subscribeToPubsubChannel'
-    clientId: NodeId
+    clientId?: NodeId
     projectId: string
-    userId: UserId
+    userId?: UserId
     channelName: PubsubChannelName
     timestamp: number
 }
@@ -205,9 +295,9 @@ export type SubscribeToPubsubChannelLogItem = {
 export const isSubscribeToPubsubChannelLogItem = (x: any): x is SubscribeToPubsubChannelLogItem => (
     _validateObject(x, {
         type: isEqualTo('subscribeToPubsubChannel'),
-        clientId: isNodeId,
+        clientId: optional(isNodeId),
         projectId: isString,
-        userId: isUserId,
+        userId: optional(isUserId),
         channelName: isPubsubChannelName,
         timestamp: isNumber
     })
@@ -217,9 +307,9 @@ export const isSubscribeToPubsubChannelLogItem = (x: any): x is SubscribeToPubsu
 
 export type PublishToPubsubChannelLogItem = {
     type: 'publishToPubsubChannel'
-    clientId: NodeId
+    clientId?: NodeId
     projectId: string
-    userId: UserId
+    userId?: UserId
     channelName: PubsubChannelName
     messageType: string
     timestamp: number
@@ -228,9 +318,9 @@ export type PublishToPubsubChannelLogItem = {
 export const isPublishToPubsubChannelLogItem = (x: any): x is PublishToPubsubChannelLogItem => (
     _validateObject(x, {
         type: isEqualTo('publishToPubsubChannel'),
-        clientId: isNodeId,
+        clientId: optional(isNodeId),
         projectId: isString,
-        userId: isUserId,
+        userId: optional(isUserId),
         channelName: isPubsubChannelName,
         messageType: isString,
         timestamp: isNumber
@@ -337,6 +427,9 @@ export type LogItem =
     InitiateIpfsUploadLogItem
     | FinalizeIpfsUploadLogItem
     | FindIpfsFileLogItem
+    | InitiateFileUploadLogItem
+    | FinalizeFileUploadLogItem
+    | FindFileLogItem
     | SetMutableLogItem
     | GetMutableLogItem
     | InitiateTaskResultUploadLogItem
@@ -353,6 +446,9 @@ export const isLogItem = (x: any): x is LogItem => (
         isInitiateIpfsUploadLogItem,
         isFinalizeIpfsUploadLogItem,
         isfindIpfsFileLogItem,
+        isInitiateFileUploadLogItem,
+        isFinalizeFileUploadLogItem,
+        isfindFileLogItem,
         isSetMutableLogItem,
         isGetMutableLogItem,
         isInitiateTaskResultUploadLogItem,

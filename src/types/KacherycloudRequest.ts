@@ -54,7 +54,7 @@ export const isGetClientInfoResponse = (x: any): x is GetClientInfoResponse => {
 }
 
 //////////////////////////////////////////////////////////////////////////////////
-// getProjectInfo
+// getProjectBucketBaseUrl
 
 export type GetProjectBucketBaseUrlRequest = {
     payload: {
@@ -92,6 +92,90 @@ export const isGetProjectBucketBaseUrlResponse = (x: any): x is GetProjectBucket
         type: isEqualTo('getProjectBucketBaseUrl'),
         found: isBoolean,
         projectBaseUrl: optional(isString)
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// accessGroupEncrypt
+
+export type AccessGroupEncryptRequest = {
+    payload: {
+        type: 'accessGroupEncrypt'
+        timestamp: number
+        accessGroupId: string
+        text: string
+    }
+    fromClientId?: NodeId
+    signature?: Signature
+}
+
+export const isAccessGroupEncryptRequest = (x: any): x is AccessGroupEncryptRequest => {
+    const isPayload = (y: any) => {
+        return _validateObject(y, {
+            type: isEqualTo('accessGroupEncrypt'),
+            timestamp: isNumber,
+            accessGroupId: isString,
+            text: isString
+        })
+    }
+    return _validateObject(x, {
+        payload: isPayload,
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature)
+    })
+}
+
+export type AccessGroupEncryptResponse = {
+    type: 'accessGroupEncrypt'
+    encryptedText: string
+}
+
+export const isAccessGroupEncryptResponse = (x: any): x is AccessGroupEncryptResponse => {
+    return _validateObject(x, {
+        type: isEqualTo('accessGroupEncrypt'),
+        encryptedText: isString
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// accessGroupEncrypt
+
+export type AccessGroupDecryptRequest = {
+    payload: {
+        type: 'accessGroupDecrypt'
+        timestamp: number
+        accessGroupId: string
+        encryptedText: string
+    }
+    fromClientId?: NodeId
+    signature?: Signature
+}
+
+export const isAccessGroupDecryptRequest = (x: any): x is AccessGroupDecryptRequest => {
+    const isPayload = (y: any) => {
+        return _validateObject(y, {
+            type: isEqualTo('accessGroupDecrypt'),
+            timestamp: isNumber,
+            accessGroupId: isString,
+            encryptedText: isString
+        })
+    }
+    return _validateObject(x, {
+        payload: isPayload,
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature)
+    })
+}
+
+export type AccessGroupDecryptResponse = {
+    type: 'accessGroupDecrypt'
+    decryptedText: string
+}
+
+export const isAccessGroupDecryptResponse = (x: any): x is AccessGroupDecryptResponse => {
+    return _validateObject(x, {
+        type: isEqualTo('accessGroupDecrypt'),
+        decryptedText: isString
     })
 }
 
@@ -222,6 +306,152 @@ export type FindIpfsFileResponse = {
 export const isFindIpfsFileResponse = (x: any): x is FindIpfsFileResponse => {
     return _validateObject(x, {
         type: isEqualTo('findIpfsFile'),
+        found: isBoolean,
+        projectId: optional(isString),
+        size: optional(isNumber),
+        url: optional(isString)
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// initiateFileUpload
+
+export type InitiateFileUploadRequest = {
+    payload: {
+        type: 'initiateFileUpload'
+        timestamp: number
+        size: number
+        hashAlg: 'sha1'
+        hash: string
+        projectId?: string
+    }
+    fromClientId: NodeId
+    signature: Signature
+}
+
+export const isInitiateFileUploadRequest = (x: any): x is InitiateFileUploadRequest => {
+    const isPayload = (y: any) => {
+        return _validateObject(y, {
+            type: isEqualTo('initiateFileUpload'),
+            timestamp: isNumber,
+            size: isNumber,
+            hashAlg: isOneOf(['sha1'].map(a => (isEqualTo(a)))),
+            hash: isString,
+            projectId: optional(isString)
+        })
+    }
+    return _validateObject(x, {
+        payload: isPayload,
+        fromClientId: isNodeId,
+        signature: isSignature
+    })
+}
+
+export type InitiateFileUploadResponse = {
+    type: 'initiateFileUpload'
+    alreadyExists?: boolean
+    objectKey?: string
+    signedUploadUrl?: string
+    alreadyPending?: boolean
+}
+
+export const isInitiateFileUploadResponse = (x: any): x is InitiateFileUploadResponse => {
+    return _validateObject(x, {
+        type: isEqualTo('initiateFileUpload'),
+        alreadyExists: optional(isBoolean),
+        objectKey: optional(isString),
+        signedUploadUrl: optional(isString),
+        alreadyPending: optional(isBoolean)
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// finalizeFileUpload
+
+export type FinalizeFileUploadRequest = {
+    payload: {
+        type: 'finalizeFileUpload'
+        timestamp: number
+        objectKey: string
+        hashAlg: 'sha1'
+        hash: string
+        projectId?: string
+    }
+    fromClientId: NodeId
+    signature: Signature
+}
+
+export const isFinalizeFileUploadRequest = (x: any): x is FinalizeFileUploadRequest => {
+    const isPayload = (y: any) => {
+        return _validateObject(y, {
+            type: isEqualTo('finalizeFileUpload'),
+            timestamp: isNumber,
+            objectKey: isString,
+            hashAlg: isOneOf(['sha1'].map(a => (isEqualTo(a)))),
+            hash: isString,
+            projectId: optional(isString)
+        })
+    }
+    return _validateObject(x, {
+        payload: isPayload,
+        fromClientId: isNodeId,
+        signature: isSignature
+    })
+}
+
+export type FinalizeFileUploadResponse = {
+    type: 'finalizeFileUpload'
+}
+
+export const isFinalizeFileUploadResponse = (x: any): x is FinalizeFileUploadResponse => {
+    return _validateObject(x, {
+        type: isEqualTo('finalizeFileUpload')
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// findFile
+
+export type FindFileRequest = {
+    payload: {
+        type: 'findFile'
+        timestamp: number
+        hashAlg: string
+        hash: string
+        projectId?: string
+    }
+    fromClientId?: NodeId
+    signature?: Signature
+}
+
+export const isFindFileRequest = (x: any): x is FindFileRequest => {
+    const isPayload = (y: any) => {
+        return _validateObject(y, {
+            type: isEqualTo('findFile'),
+            timestamp: isNumber,
+            hashAlg: isString,
+            hash: isString,
+            projectId: optional(isString)
+        })
+    }
+    return _validateObject(x, {
+        payload: isPayload,
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature)
+    })
+}
+
+export type FindFileResponse = {
+    type: 'findFile'
+    found: boolean
+    projectId?: string
+    size?: number
+    url?: string
+}
+
+export const isFindFileResponse = (x: any): x is FindFileResponse => {
+    return _validateObject(x, {
+        type: isEqualTo('findFile'),
         found: isBoolean,
         projectId: optional(isString),
         size: optional(isNumber),
@@ -670,9 +900,14 @@ export const isGetFeedMessagesResponse = (x: any): x is GetFeedMessagesResponse 
 export type KacherycloudRequest =
     GetClientInfoRequest |
     GetProjectBucketBaseUrlRequest |
+    AccessGroupEncryptRequest |
+    AccessGroupDecryptRequest |
     InitiateIpfsUploadRequest |
     FinalizeIpfsUploadRequest |
     FindIpfsFileRequest |
+    InitiateFileUploadRequest |
+    FinalizeFileUploadRequest |
+    FindFileRequest |
     SetMutableRequest |
     GetMutableRequest |
     InitiateTaskResultUploadRequest |
@@ -688,9 +923,14 @@ export const isKacherycloudRequest = (x: any): x is KacherycloudRequest => {
     return isOneOf([
         isGetClientInfoRequest,
         isGetProjectBucketBaseUrlRequest,
+        isAccessGroupEncryptRequest,
+        isAccessGroupDecryptRequest,
         isInitiateIpfsUploadRequest,
         isFinalizeIpfsUploadRequest,
         isFindIpfsFileRequest,
+        isInitiateFileUploadRequest,
+        isFinalizeFileUploadRequest,
+        isFindFileRequest,
         isSetMutableRequest,
         isGetMutableRequest,
         isInitiateTaskResultUploadRequest,
@@ -707,10 +947,14 @@ export const isKacherycloudRequest = (x: any): x is KacherycloudRequest => {
 export type KacherycloudResponse =
     GetClientInfoResponse |
     GetProjectBucketBaseUrlResponse |
-    GetProjectBucketBaseUrlResponse |
+    AccessGroupEncryptResponse |
+    AccessGroupDecryptResponse |
     InitiateIpfsUploadResponse |
     FinalizeIpfsUploadResponse |
     FindIpfsFileResponse |
+    InitiateFileUploadResponse |
+    FinalizeFileUploadResponse |
+    FindFileResponse |
     SetMutableResponse |
     GetMutableResponse |
     InitiateTaskResultUploadResponse |
@@ -726,9 +970,14 @@ export const isKacherycloudResponse = (x: any): x is KacherycloudResponse => {
     return isOneOf([
         isGetClientInfoResponse,
         isGetProjectBucketBaseUrlResponse,
+        isAccessGroupEncryptResponse,
+        isAccessGroupDecryptResponse,
         isInitiateIpfsUploadResponse,
         isFinalizeIpfsUploadResponse,
         isFindIpfsFileResponse,
+        isInitiateFileUploadResponse,
+        isFinalizeFileUploadResponse,
+        isFindFileResponse,
         isSetMutableResponse,
         isGetMutableResponse,
         isInitiateTaskResultUploadResponse,

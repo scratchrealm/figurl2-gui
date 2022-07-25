@@ -3,13 +3,13 @@ import { isNumber, isString, _validateObject } from "../commonInterface/kacheryT
 export type MutableRecord = {
     projectId: string
     mutableKey: string
-    cid: string
+    value: string
 }
 
 export const isMutableRecord = (x: any): x is MutableRecord => (
     _validateObject(x, {
         projectId: isString,
         mutableKey: isString,
-        cid: isString
+        value: isString
     })
 )

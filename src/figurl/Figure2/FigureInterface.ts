@@ -3,11 +3,13 @@ import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
 import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
+import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
 import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './ipfsDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
+import kacheryCloudStoreFile from './kacheryCloudStoreFile'
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 (window as any).figurlFileData = {}
@@ -16,6 +18,11 @@ class FigureInterface {
     #taskManager: KacheryCloudTaskManager | undefined
     #taskJobs: {[key: string]: TaskJob<any>} = {}
     #feeds: {[key: string]: KacheryCloudFeed} = {}
+    #closed = false
+    #onRequestPermissionsCallback = (purpose: string) => {}
+    #authorizedPermissions = {
+        'store-file': undefined as (boolean | undefined)
+    }
     constructor(private a: {
         projectId: string | undefined,
         backendId: string | null,
@@ -28,6 +35,7 @@ class FigureInterface {
     }) {
         this.#taskManager = a.taskManager
         window.addEventListener('message', e => {
+            if (this.#closed) return
             const msg = e.data
             if (isMessageToParent(msg)) {
                 if (msg.type === 'figurlRequest') {
@@ -91,6 +99,15 @@ class FigureInterface {
                                 })
                             })
                         }
+                        else if (request.type === 'storeFile') {
+                            this.handleStoreFileRequest(request).then(response => {
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
+                            })
+                        }
                     }
                 }
             }
@@ -106,6 +123,22 @@ class FigureInterface {
             updateSignedIn()
         })
         updateSignedIn()
+    }
+    close() {
+        this.#closed = true
+    }
+    public get figureId() {
+        return this.a.figureId
+    }
+    async authorizePermission(purpose: 'store-file', authorized: boolean) {
+        this.#authorizedPermissions['store-file'] = authorized
+        sleepMsec(400) // so we can be sure we've detected it
+    }
+    hasPermission(purpose: 'store-file') {
+        return this.#authorizedPermissions['store-file'] || false
+    }
+    onRequestPermissions(callback: (purpose: string) => void) {
+        this.#onRequestPermissionsCallback = callback
     }
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
         let {uri} = request
@@ -256,6 +289,30 @@ class FigureInterface {
         return {
             type: 'getMutable',
             value: value !== undefined ? value : null
+        }
+    }
+    async verifyPermissions(purpose: 'store-file') {
+        if (this.#authorizedPermissions[purpose]) return true
+        this.#onRequestPermissionsCallback('store-file')
+        while (true) {
+            if (this.#authorizedPermissions[purpose]) return true
+            await sleepMsec(200)
+        }
+    }
+    async handleStoreFileRequest(request: StoreFileRequest): Promise<StoreFileResponse> {
+        if (!(await this.verifyPermissions('store-file'))) {
+            return {
+                type: 'storeFile',
+                uri: undefined
+            }
+        }
+        
+        let {fileData} = request
+        const uri = await kacheryCloudStoreFile(fileData)
+        if (!uri) throw Error('Error storing file')
+        return {
+            type: 'storeFile',
+            uri
         }
     }
     _sendMessageToChild(msg: MessageToChild) {

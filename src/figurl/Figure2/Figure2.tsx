@@ -1,5 +1,7 @@
 import useGoogleSignInClient from 'components/googleSignIn/useGoogleSignInClient';
 import { randomAlphaString } from 'components/misc/randomAlphaString';
+import ModalWindow from 'components/ModalWindow/ModalWindow';
+import { useModalDialog } from 'figurl/MainWindow/ApplicationBar/ApplicationBar';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
 import useBackendId from 'figurl/useBackendId';
 import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
@@ -9,6 +11,7 @@ import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useS
 import { useHistory, useLocation } from 'react-router-dom';
 import FigureInterface from './FigureInterface';
 import ipfsDownload, { fileDownload } from './ipfsDownload';
+import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
 
@@ -109,11 +112,12 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     const {backendIdForProject} = useBackendId()
     const backendId = projectId ? backendIdForProject(projectId) : null
     const {figureData, progress} = useFigureData(figureDataUri)
-    const [figureId, setFigureId] = useState<string>()
+    const [figureInterface, setFigureInterface] = useState<FigureInterface | undefined>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
     const googleSignInClient = useGoogleSignInClient()
     const taskManager = useKacheryCloudTaskManager()
     const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
+    const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
     useEffect(() => {
         progress.onProgress(({loaded, total}) => {
             setProgressValue({loaded, total})
@@ -124,7 +128,7 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
         if (!viewUrl) return
         if (!googleSignInClient) return
         const id = randomAlphaString(10)
-        new FigureInterface({
+        const figureInterface = new FigureInterface({
             projectId,
             backendId,
             figureId: id,
@@ -134,8 +138,18 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             googleSignInClient,
             taskManager
         })
-        setFigureId(id)
+        setFigureInterface(figureInterface)
+
+        return () => {
+            figureInterface.close()
+        }
     }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager])
+
+    useEffect(() => {
+        if (!figureInterface) return
+        figureInterface.onRequestPermissions(openPermissionsWindow)
+    }, [figureInterface, openPermissionsWindow])
+
     if (!figureData) {
         return (
             <ProgressComponent
@@ -144,18 +158,29 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             />
         )
     }
-    if (!figureId) {
-        return <div>Waiting for figure ID</div>
+    if (!figureInterface) {
+        return <div>Waiting for figure interface</div>
     }
     const parentOrigin = window.location.protocol + '//' + window.location.host
     return (
-        <iframe
-            ref={e => {iframeElement.current = e}}
-            title="figure"
-            src={`${viewUrl}?parentOrigin=${parentOrigin}&figureId=${figureId}`}
-            width={width}
-            height={height - 10} // we don't want the scrollbar to appear
-        />
+        <div>
+            <iframe
+                ref={e => {iframeElement.current = e}}
+                title="figure"
+                src={`${viewUrl}?parentOrigin=${parentOrigin}&figureId=${figureInterface.figureId}`}
+                width={width}
+                height={height - 10} // we don't want the scrollbar to appear
+            />
+            <ModalWindow
+                open={permissionsWindowVisible}
+                onClose={closePermissionsWindow}
+            >
+                <PermissionsWindow
+                    onClose={closePermissionsWindow}
+                    figureInterface={figureInterface}
+                />
+            </ModalWindow>
+        </div>
     )
 }
 

@@ -1,9 +1,9 @@
-import { isNumber, isString, isUserId, UserId, _validateObject } from "../commonInterface/kacheryTypes"
+import { isNumber, isString, isUserId, UserId, optional, _validateObject } from "../commonInterface/kacheryTypes"
 
 export type ProjectSettings = {
 }
 
-export const isProjectSettings = (y: any): y is ProjectSettings => (
+export const isProjectSettings = (x: any): x is ProjectSettings => (
     true
 )
 
@@ -14,6 +14,7 @@ export type Project = {
     timestampCreated: number
     timestampLastModified: number
     settings: ProjectSettings
+    bucketId?: string
 }
 
 export const isProject = (x: any): x is Project => {
@@ -23,6 +24,7 @@ export const isProject = (x: any): x is Project => {
         label: isString,
         timestampCreated: isNumber,
         timestampLastModified: isNumber,
-        settings: isProjectSettings
+        settings: isProjectSettings,
+        bucketId: optional(isString)
     })
 }
