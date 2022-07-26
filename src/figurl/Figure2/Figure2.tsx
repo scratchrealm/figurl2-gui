@@ -118,11 +118,16 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     const taskManager = useKacheryCloudTaskManager()
     const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
+
     useEffect(() => {
         progress.onProgress(({loaded, total}) => {
             setProgressValue({loaded, total})
         })
     }, [progress])
+    const location = useLocation()
+    const history = useHistory()
+    const qs = location.search.slice(1)
+    const query = useMemo(() => (QueryString.parse(qs)), [qs]);
     useEffect(() => {
         if (!figureData) return
         if (!viewUrl) return
@@ -145,10 +150,30 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
         }
     }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager])
 
+    const handleSetUrlState = useCallback((state: {[key: string]: any}) => {
+        const newLocation = {
+            ...location,
+            search: adjustQueryStringForState(location.search, state)
+        }
+        history.push(newLocation)
+    }, [location, history])
+
     useEffect(() => {
         if (!figureInterface) return
         figureInterface.onRequestPermissions(openPermissionsWindow)
-    }, [figureInterface, openPermissionsWindow])
+        figureInterface.onSetUrlState(handleSetUrlState)
+    }, [figureInterface, openPermissionsWindow, handleSetUrlState])
+
+    const parentOrigin = window.location.protocol + '//' + window.location.host
+    let src = useMemo(() => {
+        if (!figureInterface) return ''
+        let src = `${viewUrl}?parentOrigin=${parentOrigin}&figureId=${figureInterface.figureId}`
+        if (query.s) {
+            src += `&s=${query.s}`
+        }
+        return src
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [figureInterface, parentOrigin, viewUrl]) // intentionally exclude query.s from dependencies so we don't get a refresh when state changes
 
     if (!figureData) {
         return (
@@ -161,13 +186,12 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     if (!figureInterface) {
         return <div>Waiting for figure interface</div>
     }
-    const parentOrigin = window.location.protocol + '//' + window.location.host
     return (
         <div>
             <iframe
                 ref={e => {iframeElement.current = e}}
                 title="figure"
-                src={`${viewUrl}?parentOrigin=${parentOrigin}&figureId=${figureInterface.figureId}`}
+                src={src}
                 width={width}
                 height={height - 10} // we don't want the scrollbar to appear
             />
@@ -182,6 +206,13 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             </ModalWindow>
         </div>
     )
+}
+
+const adjustQueryStringForState = (querystr: string, state: {[key: string]: any}) => {
+    const qs = querystr.slice(1)
+    const query = QueryString.parse(qs)
+    query.s = JSON.stringify(state)
+    return queryString(query)
 }
 
 const queryString = (params: { [key: string]: string | string[] }) => {

@@ -9,7 +9,7 @@ import { MutableRefObject } from "react"
 import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './ipfsDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import kacheryCloudStoreFile from './kacheryCloudStoreFile'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 (window as any).figurlFileData = {}
@@ -20,6 +20,7 @@ class FigureInterface {
     #feeds: {[key: string]: KacheryCloudFeed} = {}
     #closed = false
     #onRequestPermissionsCallback = (purpose: string) => {}
+    #onSetUrlStateCallback = (state: {[key: string]: any}) => {}
     #authorizedPermissions = {
         'store-file': undefined as (boolean | undefined)
     }
@@ -108,6 +109,15 @@ class FigureInterface {
                                 })
                             })
                         }
+                        else if (request.type === 'setUrlState') {
+                            this.handleSetUrlState(request).then(response => {
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
+                            })
+                        }
                     }
                 }
             }
@@ -139,6 +149,9 @@ class FigureInterface {
     }
     onRequestPermissions(callback: (purpose: string) => void) {
         this.#onRequestPermissionsCallback = callback
+    }
+    onSetUrlState(callback: (state: {[key: string]: any}) => void) {
+        this.#onSetUrlStateCallback = callback
     }
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
         let {uri} = request
@@ -313,6 +326,12 @@ class FigureInterface {
         return {
             type: 'storeFile',
             uri
+        }
+    }
+    async handleSetUrlState(request: SetUrlStateRequest): Promise<SetUrlStateResponse> {
+        this.#onSetUrlStateCallback(request.state)
+        return {
+            type: 'setUrlState'
         }
     }
     _sendMessageToChild(msg: MessageToChild) {

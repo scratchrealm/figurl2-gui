@@ -7,7 +7,8 @@ import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import { GetClientInfoRequest, isGetClientInfoResponse } from "types/KacherycloudRequest";
 import FigureInterface from "./FigureInterface";
 import { getKacheryCloudClientInfo } from "./getKacheryCloudClientInfo";
-import { JSONObject, NodeId } from "./viewInterface/kacheryTypes";
+import { NodeId } from "./viewInterface/kacheryTypes";
+import { JSONObject } from "./viewInterface/validateObject";
 
 type Props = {
     figureInterface: FigureInterface
