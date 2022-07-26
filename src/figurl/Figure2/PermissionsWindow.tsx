@@ -47,7 +47,7 @@ const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose})
                     href={registerClientUrl}
                     target="_blank"
                 >Register this client</Hyperlink>.&nbsp;
-                Then <Hyperlink onClick={refreshVerifyClient}>cliek here to continue</Hyperlink>.
+                Then <Hyperlink onClick={refreshVerifyClient}>click here to continue</Hyperlink>.
             </div>
         </div>
     }
