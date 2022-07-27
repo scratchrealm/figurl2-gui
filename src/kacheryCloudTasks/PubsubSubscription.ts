@@ -24,6 +24,7 @@ class PubsubSubscription {
                 uuid
             })
             pubnub.setToken(token)
+            console.info(`Subscribing to channel: ${pubsubChannelName}`)
             pubnub.subscribe({
                 channels: [pubsubChannelName]
             })
@@ -42,6 +43,7 @@ class PubsubSubscription {
         this.#messageCallbacks.push(callback)
     }
     unsubscribe() {
+        console.info('Unsubscribing from pubsub channels')
         this.#messageCallbacks = []
         this.#pubnub && this.#pubnub.unsubscribeAll()
         this.#unsubscribed = true

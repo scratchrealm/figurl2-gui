@@ -34,21 +34,21 @@ class KacheryCloudTaskManager {
             return this.#taskJobs[taskJobId.toString()]
         }
         else {
+            const triggerUpdate = () => {
+                this.#updateCallbacks.forEach(cb => {cb()})
+            }
             const tj = new TaskJob<ReturnType>({
                 taskType: o.taskType,
                 taskName: o.taskName,
                 taskInput: o.taskInput,
                 taskJobId,
                 publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => {return this._publishToPubsubChannel(channelName, message)},
-                getProjectBucketBaseUrl: () => {return this._getProjectBucketBaseUrl()}
+                getProjectBucketBaseUrl: () => {return this._getProjectBucketBaseUrl()},
+                onStarted: triggerUpdate,
+                onError: triggerUpdate,
+                onFinished: triggerUpdate
             })
-            const triggerUpdate = () => {
-                this.#updateCallbacks.forEach(cb => {cb()})
-            }
             this.#taskJobs[taskJobId.toString()] = tj
-            tj.onStarted(triggerUpdate)
-            tj.onError(triggerUpdate)
-            tj.onFinished(triggerUpdate)
             triggerUpdate()
             return tj
         }

@@ -21,7 +21,13 @@ class TaskJob<ReturnType> {
         taskJobId: Sha1Hash,
         publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => Promise<void>,
         getProjectBucketBaseUrl: () => Promise<string>
+        onStarted: () => void
+        onFinished: () => void
+        onError: () => void
     }) {
+        this.onStarted(d.onStarted)
+        this.onFinished(d.onFinished)
+        this.onError(d.onError)
         this._start()
     }
     get taskType() {
