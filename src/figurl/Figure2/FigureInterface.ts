@@ -268,7 +268,8 @@ class FigureInterface {
             taskJobId: taskJob.taskJobId.toString(),
             status: taskJob.status,
             errorMessage: taskJob.errorMessage,
-            returnValue: taskJob.result
+            returnValue: taskJob.result,
+            returnValueUrl: await taskJob.getReturnValueUrl()
         }
         return response
     }

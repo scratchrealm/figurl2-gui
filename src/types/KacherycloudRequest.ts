@@ -648,6 +648,7 @@ export type SubscribeToPubsubChannelRequest = {
         timestamp: number
         channelName: PubsubChannelName
         projectId?: string
+        uuid?: string
     }
     fromClientId?: NodeId
     signature?: Signature
@@ -659,7 +660,8 @@ export const isSubscribeToPubsubChannelRequest = (x: any): x is SubscribeToPubsu
             type: isEqualTo('subscribeToPubsubChannel'),
             timestamp: isNumber,
             channelName: isPubsubChannelName,
-            projectId: optional(isString)
+            projectId: optional(isString),
+            uuid: optional(isString)
         })
     }
     return _validateObject(x, {

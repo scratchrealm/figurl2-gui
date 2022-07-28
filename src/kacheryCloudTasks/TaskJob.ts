@@ -130,11 +130,15 @@ class TaskJob<ReturnType> {
             this.#onStartedCallbacks.forEach(cb => {cb()})
         }
     }
+    async getReturnValueUrl() {
+        const s = this.d.taskJobId
+        const projectBucketBaseUrl = await this.d.getProjectBucketBaseUrl()
+        const url = `${projectBucketBaseUrl}/taskResults/${this.d.taskName}/${s[0]}${s[1]}/${s[2]}${s[3]}/${s[4]}${s[5]}/${s}`
+        return url
+    }
     async _downloadResult() {
         return new Promise<void>((resolve, reject) => {
-            const s = this.d.taskJobId
-            this.d.getProjectBucketBaseUrl().then(projectBucketBaseUrl => {
-                const url = `${projectBucketBaseUrl}/taskResults/${this.d.taskName}/${s[0]}${s[1]}/${s[2]}${s[3]}/${s[4]}${s[5]}/${s}`
+            this.getReturnValueUrl().then(url => {
                 axios.get(url).then((response) => {
                     const resultData = response.data
                     deserializeReturnValue(resultData).then(dr => {
