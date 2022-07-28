@@ -21,7 +21,7 @@ class PubsubSubscription {
                 this.#pubnub = undefined
             }
             const req = this._formSubscribeRequest()
-            const resp = await kacherycloudApiRequest(req)
+            const resp = await kacherycloudApiRequest(req, {retryInterval: 5000})
             if (!isSubscribeToPubsubChannelResponse(resp)) {
                 throw Error('Unexpected response to subscribeToPubsubChannel')
             }
