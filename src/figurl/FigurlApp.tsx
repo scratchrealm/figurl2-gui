@@ -18,10 +18,11 @@ type Props = {
   webAppProjectVersion: string
   repoUrl: string
   logo: any
+  hide: number
 }
 
 const FigurlApp: FunctionComponent<Props> = ({
-  packageName, pythonProjectVersion, webAppProjectVersion, repoUrl, logo
+  packageName, pythonProjectVersion, webAppProjectVersion, repoUrl, logo, hide
 }) => {
   const homePageProps = useMemo(() => ({
     packageName, pythonProjectVersion, webAppProjectVersion, repoUrl
@@ -36,6 +37,7 @@ const FigurlApp: FunctionComponent<Props> = ({
                 packageName={packageName}
                 logo={logo}
                 homePageProps={homePageProps}
+                hide={hide}
               />
             </FigurlSetup>
           </GoogleSignInSetup>

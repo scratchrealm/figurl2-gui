@@ -187,13 +187,13 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
         return <div>Waiting for figure interface</div>
     }
     return (
-        <div>
+        <div style={{position: 'absolute', width, height, overflow: 'hidden'}}>
             <iframe
                 ref={e => {iframeElement.current = e}}
                 title="figure"
                 src={src}
                 width={width}
-                height={height - 10} // we don't want the scrollbar to appear
+                height={height}
             />
             <ModalWindow
                 open={permissionsWindowVisible}

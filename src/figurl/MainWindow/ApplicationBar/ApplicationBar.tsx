@@ -8,12 +8,11 @@ import React, { FunctionComponent, useCallback, useMemo, useState } from 'react'
 import SaveFigureControl from './SaveFigureControl';
 import SaveFigureDialog from './SaveFigureDialog';
 
-const appBarHeight = 50
-
 type Props = {
     title: string
     logo?: any
     onHome?: () => void
+    height: number
 }
 
 // const homeButtonStyle: React.CSSProperties = {
@@ -36,7 +35,7 @@ export const useModalDialog = () => {
     }), [visible, handleOpen, handleClose])
 }
 
-const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome }) => {
+const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
     const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
 
@@ -54,9 +53,11 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome }) => {
         // setRoute({routePath: '/home'})
     }, [gapi])
 
+    if (height === 0) return <span />
+
     return (
         <span>
-            <AppBar position="static" style={{height: appBarHeight, color: 'white'}}>
+            <AppBar position="static" style={{height, color: 'white'}}>
                 <Toolbar>
                 {
                     logo && (<img src={logo} alt="logo" height={30} style={{paddingBottom: 5, cursor: 'pointer'}} onClick={onHome} />)

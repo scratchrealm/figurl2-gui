@@ -10,15 +10,18 @@ type Props = {
     packageName: string
     logo?: any
     homePageProps: HomePageProps
+    hide: number
 }
 
-const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePageProps}) => {
+const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePageProps, hide}) => {
     const {setRoute, label: figureLabel, projectId} = useRoute2()
     const {width, height} = useWindowDimensions()
 
     const handleHome = useCallback(() => {
         setRoute({routePath: '/home'})
     }, [setRoute])
+
+    const applicationBarHeight = hide === 0 ? 50 : 0
 
     return (
         <div>
@@ -27,11 +30,12 @@ const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePage
                     title={figureLabel || ''}
                     onHome={handleHome}
                     logo={logo}
+                    height={applicationBarHeight}
                 />
                 <div>
                     <Routes
-                        width={width - 5}
-                        height={height - 50}
+                        width={width}
+                        height={height - applicationBarHeight}
                         homePageProps={{...homePageProps}}
                     />
                 </div>

@@ -21,6 +21,9 @@ if (channel) {
   (window as any).location = `https://v1.figurl.org${window.location.pathname}?${window.location.search.substring(1)}`
 }
 
+const hideStr = getQueryVariable('hide') || '0'
+const hide = parseInt(hideStr)
+
 
 ReactDOM.render(
   // disable strict mode to supress: "findDOMNode is deprecated in StrictMode" warnings
@@ -32,6 +35,7 @@ ReactDOM.render(
       webAppProjectVersion={webAppProjectVersion}
       repoUrl={"https://github.com/scratchrealm/figurl2"}
       logo={logo}
+      hide={hide}
     />
     // </React.StrictMode>
   ),
