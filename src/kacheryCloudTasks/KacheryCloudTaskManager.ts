@@ -31,27 +31,29 @@ class KacheryCloudTaskManager {
             sha1OfString(randomAlphaString(100))
         )
         if (taskJobId.toString() in this.#taskJobs) {
-            return this.#taskJobs[taskJobId.toString()]
-        }
-        else {
-            const triggerUpdate = () => {
-                this.#updateCallbacks.forEach(cb => {cb()})
+            const task0 = this.#taskJobs[taskJobId.toString()] as TaskJob<ReturnType>
+            if (task0.status === 'error') {
+                delete this.#taskJobs[taskJobId.toString()]
             }
-            const tj = new TaskJob<ReturnType>({
-                taskType: o.taskType,
-                taskName: o.taskName,
-                taskInput: o.taskInput,
-                taskJobId,
-                publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => {return this._publishToPubsubChannel(channelName, message)},
-                getProjectBucketBaseUrl: () => {return this._getProjectBucketBaseUrl()},
-                onStarted: triggerUpdate,
-                onError: triggerUpdate,
-                onFinished: triggerUpdate
-            })
-            this.#taskJobs[taskJobId.toString()] = tj
-            triggerUpdate()
-            return tj
+            else return task0
         }
+        const triggerUpdate = () => {
+            this.#updateCallbacks.forEach(cb => {cb()})
+        }
+        const tj = new TaskJob<ReturnType>({
+            taskType: o.taskType,
+            taskName: o.taskName,
+            taskInput: o.taskInput,
+            taskJobId,
+            publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => {return this._publishToPubsubChannel(channelName, message)},
+            getProjectBucketBaseUrl: () => {return this._getProjectBucketBaseUrl()},
+            onStarted: triggerUpdate,
+            onError: triggerUpdate,
+            onFinished: triggerUpdate
+        })
+        this.#taskJobs[taskJobId.toString()] = tj
+        triggerUpdate()
+        return tj
     }
     async runTaskAsync <ReturnType>(
         o: {taskType: TaskType, taskName: string, taskInput: any}

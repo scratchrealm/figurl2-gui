@@ -247,7 +247,7 @@ class FigureInterface {
         }
         const taskJob = this.#taskManager.runTask({taskType: request.taskType, taskName: request.taskName, taskInput: request.taskInput})
         if (!taskJob) throw Error('Unexpected: undefined task job')
-        if (!(taskJob.taskJobId.toString() in this.#taskJobs)) {
+        if (taskJob !== this.#taskJobs[taskJob.taskJobId.toString()]) {
             this.#taskJobs[taskJob.taskJobId.toString()] = taskJob
             const updateStatus = () => {
                 const msg: TaskStatusUpdateMessage = {
