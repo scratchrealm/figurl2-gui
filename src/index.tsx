@@ -24,6 +24,9 @@ if (channel) {
 const hideStr = getQueryVariable('hide') || '0'
 const hide = parseInt(hideStr)
 
+const localStr = getQueryVariable('local') || '0'
+const local = parseInt(localStr)
+
 
 ReactDOM.render(
   // disable strict mode to supress: "findDOMNode is deprecated in StrictMode" warnings
@@ -36,6 +39,7 @@ ReactDOM.render(
       repoUrl={"https://github.com/scratchrealm/figurl2"}
       logo={logo}
       hide={hide}
+      localMode={local ? true : false}
     />
     // </React.StrictMode>
   ),

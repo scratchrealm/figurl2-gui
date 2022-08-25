@@ -1,6 +1,7 @@
 import useGoogleSignInClient from 'components/googleSignIn/useGoogleSignInClient';
 import { randomAlphaString } from 'components/misc/randomAlphaString';
 import ModalWindow from 'components/ModalWindow/ModalWindow';
+import { useLocalMode } from 'figurl/FigurlSetup';
 import { useModalDialog } from 'figurl/MainWindow/ApplicationBar/ApplicationBar';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
 import useBackendId from 'figurl/useBackendId';
@@ -38,6 +39,7 @@ export const useFigureData = (dataUri: string | undefined) => {
         }
         return {progress, reportProgress}
     }, [])
+    const localMode = useLocalMode()
     useEffect(() => {
         ;(async () => {
             if (!dataUri) return
@@ -45,17 +47,18 @@ export const useFigureData = (dataUri: string | undefined) => {
             if (dataUri.startsWith('ipfs://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const cid = a[2]
+                if (localMode) throw Error('Cannot load ipfs file in local mode')
                 data = await ipfsDownload(cid)
             }
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, reportProgress)
+                data = await fileDownload('sha1', sha1, reportProgress, {localMode})
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path, reportProgress)
+                data = await fileDownload('sha1-enc', sha1_enc_path, reportProgress, {localMode})
             }
             else {
                 throw Error(`Unexpected data URI: ${dataUri}`)
@@ -63,7 +66,7 @@ export const useFigureData = (dataUri: string | undefined) => {
             data = await deserializeReturnValue(data)
             setFigureData(data)
         })()
-    }, [dataUri, reportProgress])
+    }, [dataUri, reportProgress, localMode])
     return {figureData, progress}
 }
 
@@ -127,7 +130,8 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
     const location = useLocation()
     const history = useHistory()
     const qs = location.search.slice(1)
-    const query = useMemo(() => (QueryString.parse(qs)), [qs]);
+    const query = useMemo(() => (QueryString.parse(qs)), [qs])
+    const localMode = useLocalMode()
     useEffect(() => {
         if (!figureData) return
         if (!viewUrl) return
@@ -141,14 +145,15 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             figureData,
             iframeElement,
             googleSignInClient,
-            taskManager
+            taskManager,
+            localMode
         })
         setFigureInterface(figureInterface)
 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager])
+    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager, localMode])
 
     const handleSetUrlState = useCallback((state: {[key: string]: any}) => {
         const newLocation = {

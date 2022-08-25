@@ -32,7 +32,8 @@ class FigureInterface {
         figureData: any,
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
         googleSignInClient: GoogleSignInClient,
-        taskManager?: KacheryCloudTaskManager
+        taskManager?: KacheryCloudTaskManager,
+        localMode: boolean
     }) {
         this.#taskManager = a.taskManager
         window.addEventListener('message', e => {
@@ -155,6 +156,7 @@ class FigureInterface {
     }
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
         let {uri} = request
+        const localMode = this.a.localMode
         let data
         const onProgress: (a: {loaded: number, total: number}) => void = ({loaded, total}) => {
             this._sendMessageToChild({
@@ -165,6 +167,7 @@ class FigureInterface {
             })
         }
         if (uri.startsWith('ipfs://')) {
+            if (localMode) throw Error('Cannot download ipfs file in local mode')
             const a = uri.split('?')[0].split('/')
             const cid = a[2]
 
@@ -174,13 +177,13 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            data = await fileDownload('sha1', sha1, onProgress)
+            data = await fileDownload('sha1', sha1, onProgress, {localMode})
         }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            data = await fileDownload('sha1-enc', sha1_enc_path, onProgress)
+            data = await fileDownload('sha1-enc', sha1_enc_path, onProgress, {localMode})
         }
         else {
             throw Error(`Invalid uri: ${uri}`)

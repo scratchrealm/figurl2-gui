@@ -19,10 +19,11 @@ type Props = {
   repoUrl: string
   logo: any
   hide: number
+  localMode: boolean
 }
 
 const FigurlApp: FunctionComponent<Props> = ({
-  packageName, pythonProjectVersion, webAppProjectVersion, repoUrl, logo, hide
+  packageName, pythonProjectVersion, webAppProjectVersion, repoUrl, logo, hide, localMode
 }) => {
   const homePageProps = useMemo(() => ({
     packageName, pythonProjectVersion, webAppProjectVersion, repoUrl
@@ -32,7 +33,7 @@ const FigurlApp: FunctionComponent<Props> = ({
       <MuiThemeProvider theme={theme}>
         <BrowserRouter>
           <GoogleSignInSetup>
-            <FigurlSetup>
+            <FigurlSetup localMode={localMode}>
               <MainWindow
                 packageName={packageName}
                 logo={logo}

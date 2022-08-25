@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
+import loadLocalSha1TextFile from './loadLocalSha1TextFile';
 
 export type FindIpfsFileRequest = {
     payload: {
@@ -99,29 +100,40 @@ const ipfsDownload = async (cid: string) => {
     return y.data
 }
 
-export const fileDownload = async (hashAlg: string, hash: string, onProgress?: (a: {loaded: number, total: number}) => void) => {
-    const downloadUrl = await fileDownloadUrl(hashAlg, hash)
-    if (!downloadUrl) {
-        throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
-    }
-    let timestampProgress = Date.now()
-    let firstProgress = true
-    const y = await axios.get(downloadUrl, {
-        responseType: 'json',
-        onDownloadProgress: (event) => {
-            if (onProgress) {
-                const loaded: number = event.loaded
-                const total: number = event.total
-                const elapsedSec = (Date.now() - timestampProgress) / 1000
-                if ((elapsedSec >= 0.5) || (firstProgress)) {
-                    onProgress({loaded, total})
-                    timestampProgress = Date.now()
-                    firstProgress = false
+export const fileDownload = async (hashAlg: string, hash: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean}) => {
+    const {localMode} = o
+    console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
+    if (!localMode) {
+        const downloadUrl = await fileDownloadUrl(hashAlg, hash)
+        if (!downloadUrl) {
+            throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
+        }
+        let timestampProgress = Date.now()
+        let firstProgress = true
+        const y = await axios.get(downloadUrl, {
+            responseType: 'json',
+            onDownloadProgress: (event) => {
+                if (onProgress) {
+                    const loaded: number = event.loaded
+                    const total: number = event.total
+                    const elapsedSec = (Date.now() - timestampProgress) / 1000
+                    if ((elapsedSec >= 0.5) || (firstProgress)) {
+                        onProgress({loaded, total})
+                        timestampProgress = Date.now()
+                        firstProgress = false
+                    }
                 }
             }
-        }
-    })
-    return y.data
+        })
+        return y.data
+    }
+    else {
+        if (hashAlg !== 'sha1') throw Error(`Invalid hashAlg ${hashAlg} for local file`)
+        const txt = await loadLocalSha1TextFile(hash)
+        if (!txt) throw Error(`Unable to find file locally: ${hashAlg}://${hash}`)
+        const ret = JSON.parse(txt)
+        return ret
+    }
 }
 
 export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
