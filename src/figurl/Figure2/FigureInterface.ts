@@ -1,3 +1,4 @@
+import { UserId } from 'commonInterface/kacheryTypes'
 import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
@@ -126,7 +127,7 @@ class FigureInterface {
         const updateSignedIn = () => {
             this._sendMessageToChild({
                 type: 'setCurrentUser',
-                userId: a.googleSignInClient.userId || undefined,
+                userId: a.googleSignInClient.userId ? a.googleSignInClient.userId as any as UserId : undefined,
                 googleIdToken: a.googleSignInClient.idToken || undefined
             })
         }
