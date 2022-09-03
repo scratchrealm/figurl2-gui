@@ -1,4 +1,4 @@
-import { isArrayOf, isBoolean, isEqualTo, isNodeId, isOneOf, isSignature, isString, isUserId, NodeId, optional, Signature, UserId, _validateObject } from "../commonInterface/kacheryTypes"
+import { isArrayOf, isBoolean, isEqualTo, isNodeId, isOneOf, isPrivateKeyHex, isSignature, isString, isUserId, NodeId, optional, PrivateKeyHex, Signature, UserId, _validateObject } from "../commonInterface/kacheryTypes"
 import { AccessGroup, AccessGroupUser, isAccessGroup, isAccessGroupUser } from "./AccessGroup"
 import { Auth, isAuth } from "./Auth"
 import { Bucket, BucketService, isBucket, isBucketService } from "./Bucket"
@@ -646,6 +646,7 @@ export type AddClientRequest = {
         type: 'addClient'
     }
     verificationSignature: Signature
+    privateKeyHex?: PrivateKeyHex
     auth: Auth
 }
 
@@ -662,6 +663,7 @@ export const isAddClientRequest = (x: any): x is AddClientRequest => {
             })
         ),
         verificationSignature: isSignature,
+        privateKeyHex: optional(isPrivateKeyHex),
         auth: isAuth
     })
 }

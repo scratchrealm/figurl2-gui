@@ -17,9 +17,9 @@ const ProgressComponent: FunctionComponent<Props> = ({loaded, total}) => {
             {
                 total ? (
                     <span>
-                        Figure data: loaded {formatByteCount(loaded || 0)} of {formatByteCount(total || 0)}
+                        Loaded {formatByteCount(loaded || 0)} of {formatByteCount(total || 0)}
                     </span>
-                ) : <span>Waiting for figure data</span>
+                ) : <span>Waiting for data</span>
             }
         </div>
     )

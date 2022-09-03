@@ -19,6 +19,7 @@ class TaskJob<ReturnType> {
         taskName: string,
         taskInput: any,
         taskJobId: Sha1Hash,
+        backendId?: string,
         publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => Promise<void>,
         getProjectBucketBaseUrl: () => Promise<string>
         onStarted: () => void
@@ -170,7 +171,8 @@ class TaskJob<ReturnType> {
             taskType: this.d.taskType,
             taskName: this.d.taskName,
             taskInput: this.d.taskInput,
-            taskJobId: this.d.taskJobId
+            taskJobId: this.d.taskJobId,
+            backendId: this.d.backendId
         }
         this.d.publishToPubsubChannel('requestTasks', message).catch(err => {
             console.warn(err)

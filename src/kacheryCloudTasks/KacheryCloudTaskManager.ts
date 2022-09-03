@@ -12,7 +12,8 @@ class KacheryCloudTaskManager {
     #pubsubSubscription: PubsubSubscription | undefined
     #updateCallbacks: (() => void)[] = []
     constructor(private d: {
-        projectId: string
+        projectId: string,
+        backendId?: string
     }) {
         if (d.projectId) {
             this.#pubsubSubscription = new PubsubSubscription({
@@ -45,6 +46,7 @@ class KacheryCloudTaskManager {
             taskName: o.taskName,
             taskInput: o.taskInput,
             taskJobId,
+            backendId: this.d.backendId,
             publishToPubsubChannel: (channelName: PubsubChannelName, message: PubsubMessage) => {return this._publishToPubsubChannel(channelName, message)},
             getProjectBucketBaseUrl: () => {return this._getProjectBucketBaseUrl()},
             onStarted: triggerUpdate,

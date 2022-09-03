@@ -7,7 +7,8 @@ if (!REACT_APP_GOOGLE_CLIENT_ID) {
 }
 
 const client = new OAuth2Client(REACT_APP_GOOGLE_CLIENT_ID);
-const googleVerifyIdToken = async (userId: string, token: string) => {
+const googleVerifyIdToken = async (userId: string, token?: string) => {
+  if (!token) throw Error('No google ID token')
   const ticket = await client.verifyIdToken({
       idToken: token,
       audience: REACT_APP_GOOGLE_CLIENT_ID

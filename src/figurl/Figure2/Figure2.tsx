@@ -90,6 +90,7 @@ export const useRoute2 = () => {
     }
     const figureDataUri = query.d ? query.d as string : undefined
     const projectId = query.project ? query.project as string : undefined
+    const backendId = query.backend ? query.backend as string : undefined
     const label = query.label ? query.label as any as string : 'untitled'
 
     const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, projectId?: string, label?: string}) => {
@@ -107,7 +108,7 @@ export const useRoute2 = () => {
         history.push({...location, pathname: pathname2, search: search2})
     }, [location, history, query])
 
-    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, label}
+    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label}
 }
 
 const Figure2: FunctionComponent<Props> = ({width, height}) => {

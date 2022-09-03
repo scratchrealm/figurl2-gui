@@ -3,12 +3,11 @@ import { isGoogleServiceAccountCredentials } from './GoogleServiceAccountCredent
 
 let db: Firestore | null = null
 
-const GOOGLE_CREDENTIALS = process.env.GOOGLE_CREDENTIALS
-if (!GOOGLE_CREDENTIALS) {
-    throw Error('Environment variable not set: GOOGLE_CREDENTIALS')
-}
-
 const firestoreDatabase = () => {
+    const GOOGLE_CREDENTIALS = process.env.GOOGLE_CREDENTIALS
+    if (!GOOGLE_CREDENTIALS) {
+        throw Error('Environment variable not set: GOOGLE_CREDENTIALS')
+    }
     if (!db) {
         const googleCredentials = JSON.parse(GOOGLE_CREDENTIALS)
         if (!isGoogleServiceAccountCredentials(googleCredentials)) {
@@ -21,6 +20,7 @@ const firestoreDatabase = () => {
                 private_key: googleCredentials.private_key
             }
         })
+        db.settings({ ignoreUndefinedProperties: true })
     }
     return db
 }

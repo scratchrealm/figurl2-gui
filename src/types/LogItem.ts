@@ -199,6 +199,30 @@ export const isSetMutableLogItem = (x: any): x is SetMutableLogItem => (
 
 ///////////////////////////////////////////////////////////////////////////
 
+export type DeleteMutableLogItem = {
+    type: 'deleteMutable'
+    clientId: NodeId
+    projectId: string
+    userId: UserId
+    mutableKey: string
+    isFolder: boolean
+    timestamp: number
+}
+
+export const isDeleteMutableLogItem = (x: any): x is DeleteMutableLogItem => (
+    _validateObject(x, {
+        type: isEqualTo('setMutable'),
+        clientId: isNodeId,
+        projectId: isString,
+        userId: isUserId,
+        mutableKey: isString,
+        isFolder: isBoolean,
+        timestamp: isNumber
+    })
+)
+
+///////////////////////////////////////////////////////////////////////////
+
 export type GetMutableLogItem = {
     type: 'getMutable'
     found: boolean
@@ -440,6 +464,7 @@ export type LogItem =
     | GetFeedInfoLogItem
     | AppendFeedMessagesLogItem
     | GetFeedMessagesLogItem
+    | DeleteMutableLogItem
 
 export const isLogItem = (x: any): x is LogItem => (
     isOneOf([
@@ -458,6 +483,7 @@ export const isLogItem = (x: any): x is LogItem => (
         isCreateFeedLogItem,
         isGetFeedInfoLogItem,
         isAppendFeedMessagesLogItem,
-        isGetFeedMessagesLogItem
+        isGetFeedMessagesLogItem,
+        isDeleteMutableLogItem
     ])(x)
 )

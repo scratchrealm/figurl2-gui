@@ -1,4 +1,3 @@
-import { UserId } from 'commonInterface/kacheryTypes'
 import React from 'react'
 import GoogleSignIn from './GoogleSignIn'
 
@@ -45,8 +44,8 @@ class GoogleSignInClient {
         if (!this.signedIn) return null
         return g.auth2.getAuthInstance().currentUser.get().getAuthResponse().id_token
     }
-    public get userId(): UserId | null {
-        return (this.profile?.getEmail() || null) as any as (UserId | null)
+    public get userId(): string | null {
+        return (this.profile?.getEmail() || null) as any as (string | null)
     }
     onSignedInChanged(callback: (val: boolean) => void) {
         this.#onSignedInCallbacks.push(callback)
