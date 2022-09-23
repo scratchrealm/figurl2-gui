@@ -188,7 +188,7 @@ class FigureInterface {
             if (!uri0.startsWith('sha1://')) {
                 throw Error(`Invalid uri in putly value for key: ${putlyKey}`)
             }
-            const a = uri.split('?')[0].split('/')
+            const a = uri0.split('?')[0].split('/')
             const sha1 = a[2]
             data = await fileDownload('sha1', sha1, onProgress, {localMode})
         }
