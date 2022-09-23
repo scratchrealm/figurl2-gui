@@ -1,3 +1,4 @@
+import axios from 'axios'
 import { UserId } from 'commonInterface/kacheryTypes'
 import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
@@ -180,6 +181,17 @@ class FigureInterface {
 
             data = await fileDownload('sha1', sha1, onProgress, {localMode})
         }
+        else if (uri.startsWith('putly://')) {
+            const putlyKey = uri.split('?')[0].split('/')[2]
+            const uri0 = await getPutly(putlyKey)
+            if (!uri0) throw Error(`Unable to find putly key: ${putlyKey}`)
+            if (!uri0.startsWith('sha1://')) {
+                throw Error(`Invalid uri in putly value for key: ${putlyKey}`)
+            }
+            const a = uri.split('?')[0].split('/')
+            const sha1 = a[2]
+            data = await fileDownload('sha1', sha1, onProgress, {localMode})
+        }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
@@ -326,8 +338,13 @@ class FigureInterface {
         }
         
         let {fileData} = request
-        const uri = await kacheryCloudStoreFile(fileData)
+        let uri = await kacheryCloudStoreFile(fileData)
         if (!uri) throw Error('Error storing file')
+        if (request.putlyKey) {
+            const uri2 = await setPutly(request.putlyKey, uri)
+            if (!uri2) throw Error('Error storing in putly')
+            uri = uri2
+        }
         return {
             type: 'storeFile',
             uri
@@ -351,6 +368,33 @@ class FigureInterface {
         if (!cw) return
         cw.postMessage(msg, this.a.viewUrl)
     }
+}
+
+const putlyUrl = 'https://putly.vercel.app/api/putly'
+
+export const getPutly = async (putlyKey: string) => {
+    const request = {
+        type: 'getPutly',
+        putlyKey
+    }
+    const x = await axios.post(putlyUrl, request)
+    if (x.data.type !== 'getPutly') {
+        throw Error('Unexpected response in getPutly')
+    }
+    return x.data.value
+}
+
+export const setPutly = async (putlyKey: string, value: string) => {
+    const request = {
+        type: 'setPutly',
+        putlyKey,
+        value
+    }
+    const x = await axios.post(putlyUrl, request)
+    if (x.data.type !== 'setPutly') {
+        throw Error('Unexpected response in setPutly')
+    }
+    return `putly://${putlyKey}`
 }
 
 export default FigureInterface
