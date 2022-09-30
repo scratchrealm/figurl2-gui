@@ -1,5 +1,7 @@
 import axios from 'axios';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
+import * as http from 'http'
+import * as crypto from 'crypto'
 import loadLocalSha1TextFile from './loadLocalSha1TextFile';
 
 export type FindIpfsFileRequest = {
@@ -110,22 +112,73 @@ export const fileDownload = async (hashAlg: string, hash: string, onProgress: (a
         }
         let timestampProgress = Date.now()
         let firstProgress = true
-        const y = await axios.get(downloadUrl, {
-            responseType: 'json',
-            onDownloadProgress: (event) => {
-                if (onProgress) {
-                    const loaded: number = event.loaded
-                    const total: number = event.total
-                    const elapsedSec = (Date.now() - timestampProgress) / 1000
-                    if ((elapsedSec >= 0.5) || (firstProgress)) {
-                        onProgress({loaded, total})
-                        timestampProgress = Date.now()
-                        firstProgress = false
+
+        // having trouble with axios and streams (doesn't want to return a stream even when returnType='stream')
+        return new Promise((resolve, reject) => {
+            http.get(downloadUrl, response => {
+                const chunks: Uint8Array[] = []
+                const shasum = crypto.createHash('sha1')
+                let numBytesDownloaded = 0
+                
+                response.on('data', (chunk: Uint8Array) => {
+                    numBytesDownloaded += chunk.byteLength
+                    shasum.update(chunk)
+                    chunks.push(chunk)
+                    if (onProgress) {
+                        const loaded = numBytesDownloaded
+                        const total = parseInt(response.headers['content-length'] || '0')
+                        const elapsedSec = (Date.now() - timestampProgress) / 1000
+                        if ((elapsedSec >= 0.5) || (firstProgress)) {
+                            onProgress({loaded, total})
+                            timestampProgress = Date.now()
+                            firstProgress = false
+                        }
                     }
-                }
-            }
+                })
+                response.on('end', () => {
+                    const computedSha1 = shasum.digest('hex')
+                    if (hashAlg === 'sha1') {
+                        if (computedSha1 !== hash) {
+                            reject(`Invalid sha1 of downloaded file: ${computedSha1} <> ${hash}`)
+                            return
+                        }
+                    }
+                    const data = Buffer.concat(chunks)
+                    const txt = new TextDecoder().decode(data)
+                    let ret: string
+                    try {
+                        ret = JSON.parse(txt)
+                    }
+                    catch {
+                        console.warn(txt)
+                        reject('Problem parsing JSON')
+                        return
+                    }
+                    resolve(ret)
+                })
+                response.on('error', err => {
+                    reject(err)
+                })
+            })
         })
-        return y.data
+
+        // see comment above about axios
+        // const y = await axios.get(downloadUrl, {
+        //     responseType: 'json',
+        //     onDownloadProgress: (event) => {
+        //         if (onProgress) {
+        //             const loaded: number = event.loaded
+        //             const total: number = event.total
+        //             const elapsedSec = (Date.now() - timestampProgress) / 1000
+        //             if ((elapsedSec >= 0.5) || (firstProgress)) {
+        //                 onProgress({loaded, total})
+        //                 timestampProgress = Date.now()
+        //                 firstProgress = false
+        //             }
+        //         }
+        //     }
+        // })
+        // return y.data
     }
     else {
         if (hashAlg !== 'sha1') throw Error(`Invalid hashAlg ${hashAlg} for local file`)
