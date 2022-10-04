@@ -181,12 +181,12 @@ class FigureInterface {
 
             data = await fileDownload('sha1', sha1, onProgress, {localMode})
         }
-        else if (uri.startsWith('putly://')) {
-            const putlyKey = uri.split('?')[0].split('/')[2]
-            const uri0 = await getPutly(putlyKey)
-            if (!uri0) throw Error(`Unable to find putly key: ${putlyKey}`)
+        else if (uri.startsWith('jot://')) {
+            const jotId = uri.split('?')[0].split('/')[2]
+            const uri0 = await getJotValue(jotId)
+            if (!uri0) throw Error(`Unable to find jot: ${jotId}`)
             if (!uri0.startsWith('sha1://')) {
-                throw Error(`Invalid uri in putly value for key: ${putlyKey}`)
+                throw Error(`Invalid uri in jot value for ID: ${jotId}`)
             }
             const a = uri0.split('?')[0].split('/')
             const sha1 = a[2]
@@ -340,10 +340,12 @@ class FigureInterface {
         let {fileData} = request
         let uri = await kacheryCloudStoreFile(fileData)
         if (!uri) throw Error('Error storing file')
-        if (request.putlyKey) {
-            const uri2 = await setPutly(request.putlyKey, uri)
-            if (!uri2) throw Error('Error storing in putly')
-            uri = uri2
+        if (request.jotId) {
+            if ((!this.a.googleSignInClient.userId) || (!this.a.googleSignInClient.idToken)) {
+                throw Error('Unable to set jot value: not signed in')
+            }
+            const uri2 = await setJotValue(request.jotId, uri, {userId: this.a.googleSignInClient.userId, googleIdToken: this.a.googleSignInClient.idToken})
+            if (!uri2) throw Error('Error storing jot value')
         }
         return {
             type: 'storeFile',
@@ -370,31 +372,33 @@ class FigureInterface {
     }
 }
 
-const putlyUrl = 'https://putly.vercel.app/api/putly'
+const jotUrl = 'https://jot.figurl.org/api/jot'
 
-export const getPutly = async (putlyKey: string) => {
+export const getJotValue = async (jotId: string) => {
     const request = {
-        type: 'getPutly',
-        putlyKey
+        type: 'getJotValue',
+        jotId
     }
-    const x = await axios.post(putlyUrl, request)
-    if (x.data.type !== 'getPutly') {
-        throw Error('Unexpected response in getPutly')
+    const x = await axios.post(jotUrl, request)
+    if (x.data.type !== 'getJotValue') {
+        throw Error('Unexpected response in getJotValue')
     }
     return x.data.value
 }
 
-export const setPutly = async (putlyKey: string, value: string) => {
+export const setJotValue = async (jotId: string, value: string, o: {userId: string, googleIdToken: string}) => {
     const request = {
-        type: 'setPutly',
-        putlyKey,
-        value
+        type: 'setJotValue',
+        jotId,
+        value,
+        userId: o.userId,
+        googleIdToken: o.googleIdToken
     }
-    const x = await axios.post(putlyUrl, request)
-    if (x.data.type !== 'setPutly') {
-        throw Error('Unexpected response in setPutly')
+    const x = await axios.post(jotUrl, request)
+    if (x.data.type !== 'setJotValue') {
+        throw Error('Unexpected response in setJotValue')
     }
-    return `putly://${putlyKey}`
+    return `jot://${jotId}`
 }
 
 export default FigureInterface
