@@ -53,16 +53,13 @@ const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose})
     }
     return (
         <div>
+            <h3>This application is requesting to store files in kachery-cloud on your behalf.</h3>
+            <p>To allow this, click "Authorize" below.</p>
             <div>
-                This application is requesting to store files using your kachery-cloud client.
-                To allow this, click "Authorize" below.
+                <Button onClick={() => {figureInterface.authorizePermission('store-file', true)}}>Authorize this application</Button>
             </div>
-            <div>&nbsp;</div>
-            <div>Client ID: <Hyperlink href={`https://cloud.kacheryhub.org/client/${clientId}`} target="_blank">{clientId?.slice(0, 6)}...</Hyperlink></div>
-            <div>&nbsp;</div>
-            <div>
-                <Button onClick={() => {figureInterface.authorizePermission('store-file', true)}}>Authorize</Button>
-            </div>
+            <hr />
+            <div style={{fontSize: 10}}>Client ID: <Hyperlink href={`https://cloud.kacheryhub.org/client/${clientId}`} target="_blank">{clientId}...</Hyperlink></div>
         </div>
     )
 }

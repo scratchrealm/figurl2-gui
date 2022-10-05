@@ -186,12 +186,14 @@ export const isStoreFileRequest = (x: any): x is StoreFileRequest => {
 export type StoreFileResponse = {
     type: 'storeFile'
     uri?: string
+    error?: string
 }
 
 export const isStoreFileResponse = (x: any): x is StoreFileResponse => {
     return validateObject(x, {
         type: isEqualTo('storeFile'),
-        uri: optional(isString)
+        uri: optional(isString),
+        error: optional(isString)
     })
 }
 

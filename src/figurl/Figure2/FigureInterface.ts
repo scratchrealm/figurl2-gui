@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosResponse } from 'axios'
 import { UserId } from 'commonInterface/kacheryTypes'
 import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
@@ -345,7 +345,13 @@ class FigureInterface {
                 throw Error('Unable to set jot value: not signed in')
             }
             const uri2 = await setJotValue(request.jotId, uri, {userId: this.a.googleSignInClient.userId, googleIdToken: this.a.googleSignInClient.idToken})
-            if (!uri2) throw Error('Error storing jot value')
+            if (!uri2) {
+                return {
+                    type: 'storeFile',
+                    uri: undefined,
+                    error: 'Problem setting jot value'
+                }
+            }
         }
         return {
             type: 'storeFile',
@@ -394,7 +400,14 @@ export const setJotValue = async (jotId: string, value: string, o: {userId: stri
         userId: o.userId,
         googleIdToken: o.googleIdToken
     }
-    const x = await axios.post(jotUrl, request)
+    let x: AxiosResponse
+    try {
+        x = await axios.post(jotUrl, request)
+    }
+    catch(err) {
+        console.warn('Problem setting jot value', err)
+        return undefined
+    }
     if (x.data.type !== 'setJotValue') {
         throw Error('Unexpected response in setJotValue')
     }
