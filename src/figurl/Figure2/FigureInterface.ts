@@ -8,7 +8,7 @@ import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
-import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './ipfsDownload'
+import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './fileDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import kacheryCloudStoreFile from './kacheryCloudStoreFile'
 import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
@@ -23,6 +23,8 @@ class FigureInterface {
     #closed = false
     #onRequestPermissionsCallback = (purpose: string) => {}
     #onSetUrlStateCallback = (state: {[key: string]: any}) => {}
+    #requestedFileUris: string[] = []
+    #requestedFiles: {[uri: string]: {size?: number, name?: string}} = {}
     #authorizedPermissions = {
         'store-file': undefined as (boolean | undefined)
     }
@@ -32,11 +34,18 @@ class FigureInterface {
         figureId: string,
         viewUrl: string,
         figureData: any,
+        figureDataUri?: string,
+        figureDataSize?: number,
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
         googleSignInClient: GoogleSignInClient,
         taskManager?: KacheryCloudTaskManager,
         localMode: boolean
     }) {
+        if (a.figureDataUri) {
+            this.#requestedFileUris.push(a.figureDataUri)
+            this.#requestedFiles[a.figureDataUri] = {size: a.figureDataSize, name: 'root'}
+        }
+
         this.#taskManager = a.taskManager
         window.addEventListener('message', e => {
             if (this.#closed) return
@@ -137,6 +146,18 @@ class FigureInterface {
         })
         updateSignedIn()
     }
+    fileManifest() {
+        const uris = this.#requestedFileUris
+        const ret: {uri: string, name?: string, size?: number}[] = []
+        for (let uri of uris) {
+            ret.push({
+                uri,
+                name: this.#requestedFiles[uri].name,
+                size: this.#requestedFiles[uri].size
+            })
+        }
+        return ret
+    }
     close() {
         this.#closed = true
     }
@@ -158,9 +179,14 @@ class FigureInterface {
     }
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
         let {uri} = request
+        if (!this.#requestedFiles[uri]) {
+            this.#requestedFileUris.push(uri)
+            this.#requestedFiles[uri] = {}
+        }
         const localMode = this.a.localMode
         let data
         const onProgress: (a: {loaded: number, total: number}) => void = ({loaded, total}) => {
+            this.#requestedFiles[uri].size = total
             this._sendMessageToChild({
                 type: 'fileDownloadProgress',
                 uri,
@@ -211,6 +237,10 @@ class FigureInterface {
     }
     async handleGetFileDataUrlRequest(request: GetFileDataUrlRequest): Promise<GetFileDataUrlResponse> {
         let {uri} = request
+        if (!this.#requestedFiles[uri]) {
+            this.#requestedFileUris.push(uri)
+            this.#requestedFiles[uri] = {}
+        }
         if (uri.startsWith('ipfs://')) {
             const a = uri.split('?')[0].split('/')
             const cid = a[2]
@@ -228,9 +258,12 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            const url = await fileDownloadUrl('sha1', sha1)
+            const {url, size} = await fileDownloadUrl('sha1', sha1) || {}
             if (!url) {
                 throw Error('Unable to get file download url')
+            }
+            if (size) {
+                this.#requestedFiles[uri].size = size
             }
             return {
                 type: 'getFileDataUrl',
@@ -241,9 +274,12 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            const url = await fileDownloadUrl('sha1-enc', sha1_enc_path)
+            const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path) || {}
             if (!url) {
                 throw Error('Unable to get file download url')
+            }
+            if (size) {
+                this.#requestedFiles[uri].size = size
             }
             return {
                 type: 'getFileDataUrl',

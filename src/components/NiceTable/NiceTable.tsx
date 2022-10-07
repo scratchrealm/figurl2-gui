@@ -83,7 +83,7 @@ const NiceTable: FunctionComponent<Props> = ({
         }
     }, [allSelected, onSelectedRowKeysChanged, rows])
     return (
-        <Table className="NiceTable">
+        <Table className="NiceTable2">
             <TableHead>
                 <TableRow>
                     <TableCell key="_first" style={{ width: 0 }}>

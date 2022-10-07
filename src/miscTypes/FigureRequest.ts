@@ -15,30 +15,32 @@ export const isAuth = (x: any): x is Auth => {
 }
 
 export type Figure = {
-    figureId?: string
-    creationDate?: number
+    figureId: string
+    timestampCreated: number
     ownerId: string
-    folder: string
-    queryString: string
-    projectId?: string
-    dataUri: string
     viewUri: string
+    dataUri: string
+    urlState?: any
     label: string
-    description: string
+    fileManifest: {uri: string, name?: string, size?: number}[]
+    notes: string
 }
 
 export const isFigure = (y: any): y is Figure => {
     return _validateObject(y, {
-        figureId: optional(isString),
-        creationDate: optional(isNumber),
+        figureId: isString,
+        timestampCreated: isNumber,
         ownerId: isString,
-        folder: isString,
-        queryString: isString,
-        projectId: optional(isString),
-        dataUri: isString,
         viewUri: isString,
+        dataUri: isString,
+        urlState: optional(() => (true)),
         label: isString,
-        description: isString
+        fileManifest: isArrayOf(y => _validateObject(y, {
+            uri: isString,
+            name: optional(isString),
+            size: optional(isNumber)
+        })),
+        notes: isString
     })
 }
 
@@ -46,14 +48,30 @@ export const isFigure = (y: any): y is Figure => {
 
 export type AddFigureRequest = {
     type: 'addFigure'
-    figure: Figure,
+    ownerId: string
+    viewUri: string
+    dataUri: string
+    urlState?: any
+    label: string
+    fileManifest: {uri: string, name?: string, size?: number}[]
+    notes: string
     auth: Auth
 }
 
 export const isAddFigureRequest = (x: any): x is AddFigureRequest => {
     return _validateObject(x, {
         type: isEqualTo('addFigure'),
-        figure: isFigure,
+        ownerId: isString,
+        viewUri: isString,
+        dataUri: isString,
+        urlState: optional(() => (true)),
+        label: isString,
+        fileManifest: isArrayOf(y => _validateObject(y, {
+            uri: isString,
+            name: optional(isString),
+            size: optional(isNumber)
+        })),
+        notes: isString,
         auth: isAuth
     })
 }
@@ -74,7 +92,6 @@ export const isAddFigureResponse = (x: any): x is AddFigureResponse => {
 
 export type DeleteFigureRequest = {
     type: 'deleteFigure'
-    ownerId: string,
     figureId: string,
     auth: Auth
 }
@@ -82,7 +99,6 @@ export type DeleteFigureRequest = {
 export const isDeleteFigureRequest = (x: any): x is DeleteFigureRequest => {
     return _validateObject(x, {
         type: isEqualTo('deleteFigure'),
-        ownerId: isString,
         figureId: isString,
         auth: isAuth
     })
@@ -103,12 +119,14 @@ export const isDeleteFigureResponse = (x: any): x is DeleteFigureResponse => {
 export type GetFiguresRequest = {
     type: 'getFigures'
     ownerId: string
+    auth: Auth
 }
 
 export const isGetFiguresRequest = (x: any): x is GetFiguresRequest => {
     return _validateObject(x, {
         type: isEqualTo('getFigures'),
-        ownerId: isString
+        ownerId: isString,
+        auth: isAuth
     })
 }
 

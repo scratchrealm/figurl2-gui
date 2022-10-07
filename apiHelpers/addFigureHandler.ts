@@ -2,26 +2,35 @@ import { AddFigureRequest, AddFigureResponse, Figure } from "../src/miscTypes/Fi
 import firestoreDatabase from "./common/firestoreDatabase";
 import { VerifiedReCaptchaInfo } from "./common/verifyReCaptcha";
 
-const addFigureHandler = async (request: AddFigureRequest, verifiedUserId: string, verifiedReCaptchaInfo: VerifiedReCaptchaInfo): Promise<AddFigureResponse> => {
+const addFigureHandler = async (request: AddFigureRequest, verifiedUserId: string, verifiedReCaptchaInfo?: VerifiedReCaptchaInfo): Promise<AddFigureResponse> => {
     if (!verifiedReCaptchaInfo) {
-        if (process.env.REACT_APP_RECAPTCHA_KEY) {
-            throw Error('Recaptcha info is not verified')
-        }
+        throw Error('Recaptcha info is not verified')
     }
-    const figure: Figure = request.figure
-    if (figure.ownerId !== verifiedUserId) {
-        throw Error(`Not authorized to add figure: ${figure.ownerId} <> ${verifiedUserId}`)
+    const {viewUri, dataUri, urlState, label, fileManifest, notes, ownerId} = request
+    if (ownerId !== verifiedUserId) {
+        throw Error('Not authorized to add figure. Incorrect owner ID.')
     }
-    figure.figureId = randomAlphaString(12)
-    figure.creationDate = Date.now()
+    const figureId = randomAlphaString(12)
+    const figure: Figure = {
+        figureId,
+        timestampCreated: Date.now(),
+        ownerId,
+        viewUri,
+        dataUri,
+        urlState,
+        label,
+        fileManifest,
+        notes
+    }
+
     const db = firestoreDatabase()
-    const collection = db.collection('figurl.figures')
+    const collection = db.collection('figurl.savedFigures')
     const docRef = collection.doc(figure.figureId)
     await docRef.set(figure)
 
     return {
         type: 'addFigure',
-        figureId: figure.figureId
+        figureId
     }
 }
 

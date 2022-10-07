@@ -1,4 +1,5 @@
 import Figure2, { useRoute2 } from 'figurl/Figure2/Figure2'
+import FigureInterface from 'figurl/Figure2/FigureInterface'
 import { useLocalMode } from 'figurl/FigurlSetup'
 import React, { FunctionComponent } from 'react'
 import HomePage, { HomePageProps } from '../HomePage/HomePage'
@@ -8,10 +9,10 @@ type Props = {
     width: number
     height: number
     homePageProps: HomePageProps
+    setFigureInterface: (x: FigureInterface) => void
 }
 
-const Routes: FunctionComponent<Props> = (props) => {
-    const {width, height, homePageProps} = props
+const Routes: FunctionComponent<Props> = ({width, height, homePageProps, setFigureInterface}) => {
     const {routePath, label} = useRoute2()
     const localMode = useLocalMode()
 
@@ -24,6 +25,7 @@ const Routes: FunctionComponent<Props> = (props) => {
             <Figure2
                 width={width}
                 height={height}
+                setFigureInterface={setFigureInterface}
             />
         )
         return (

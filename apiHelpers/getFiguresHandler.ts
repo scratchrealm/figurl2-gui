@@ -1,9 +1,12 @@
 import { Figure, GetFiguresRequest, GetFiguresResponse, isFigure } from "../src/miscTypes/FigureRequest";
 import firestoreDatabase from "./common/firestoreDatabase";
 
-const getFiguresHandler = async (request: GetFiguresRequest): Promise<GetFiguresResponse> => {
+const getFiguresHandler = async (request: GetFiguresRequest, verifiedUserId: string): Promise<GetFiguresResponse> => {
+    if (verifiedUserId !== request.ownerId) {
+        throw Error('Not authorized to get these figures')
+    }
     const db = firestoreDatabase()
-    const collection = db.collection('figurl.figures')
+    const collection = db.collection('figurl.savedFigures')
     const results = await collection.where('ownerId', '==', request.ownerId).get()
     const figures: Figure[] = []
     for (let doc of results.docs) {

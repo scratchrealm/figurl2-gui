@@ -2,6 +2,7 @@ import { AppBar, Button, Toolbar } from '@material-ui/core';
 import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
 import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
+import FigureInterface from 'figurl/Figure2/FigureInterface';
 import TaskMonitor from 'figurl/TaskMonitor/TaskMonitor';
 import TaskMonitorControl from 'figurl/TaskMonitor/TaskMonitorControl';
 import React, { FunctionComponent, useCallback, useMemo, useState } from 'react';
@@ -13,6 +14,7 @@ type Props = {
     logo?: any
     onHome?: () => void
     height: number
+    figureInterface?: FigureInterface
 }
 
 // const homeButtonStyle: React.CSSProperties = {
@@ -35,7 +37,7 @@ export const useModalDialog = () => {
     }), [visible, handleOpen, handleClose])
 }
 
-const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height }) => {
+const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height, figureInterface }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
     const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
 
@@ -108,6 +110,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height 
             >
                 <SaveFigureDialog
                     onClose={closeSaveFigure}
+                    figureInterface={figureInterface}
                 />
             </ModalWindow>
             {/* <ModalWindow

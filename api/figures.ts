@@ -31,7 +31,8 @@ module.exports = (req: VercelRequest, res: VercelResponse) => {
             return await deleteFigureHandler(requestBody, verifiedUserId, verifiedReCaptchaInfo)
         }
         else if (requestBody.type === 'getFigures') {
-            return await getFiguresHandler(requestBody)
+            const {verifiedUserId} = await verifyAuth(requestBody.auth)
+            return await getFiguresHandler(requestBody, verifiedUserId)
         }
         else {
             throw Error(`Unexpected figure request: ${requestBody.type}`)

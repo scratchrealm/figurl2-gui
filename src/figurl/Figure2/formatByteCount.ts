@@ -21,7 +21,7 @@ export const formatGiBCount = (a: number) => {
 }
 
 const formatNum = (a: number) => {
-    const b = a.toFixed(1)
+    const b = a.toFixed(2)
     if (Number(b) - Math.floor(Number(b)) === 0) {
         return a.toFixed(0)
     }

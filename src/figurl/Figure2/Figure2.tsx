@@ -11,7 +11,7 @@ import QueryString from 'querystring';
 import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import FigureInterface from './FigureInterface';
-import ipfsDownload, { fileDownload } from './ipfsDownload';
+import ipfsDownload, { fileDownload } from './fileDownload';
 import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
@@ -19,6 +19,7 @@ import urlFromUri from './urlFromUri';
 type Props = {
     width: number
     height: number
+    setFigureInterface: (x: FigureInterface) => void
 }
 
 type Progress = {
@@ -27,9 +28,11 @@ type Progress = {
 
 export const useFigureData = (dataUri: string | undefined) => {
     const [figureData, setFigureData] = useState<any>()
+    const [figureDataSize, setFigureDataSize] = useState<number | undefined>()
     const {progress, reportProgress} = useMemo(() => {
         let _callback: (a: {loaded: number, total: number}) => void = ({loaded, total}) => {}
         const reportProgress = (a: {loaded: number, total: number}) => {
+            if (a.total) setFigureDataSize(a.total)
             _callback(a)
         }
         const progress: Progress = {
@@ -67,7 +70,7 @@ export const useFigureData = (dataUri: string | undefined) => {
             setFigureData(data)
         })()
     }, [dataUri, reportProgress, localMode])
-    return {figureData, progress}
+    return {figureData, progress, figureDataUri: dataUri, figureDataSize}
 }
 
 export const useRoute2 = () => {
@@ -111,12 +114,12 @@ export const useRoute2 = () => {
     return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label}
 }
 
-const Figure2: FunctionComponent<Props> = ({width, height}) => {
+const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) => {
     const {viewUrl, figureDataUri, projectId} = useRoute2()
     const {backendIdForProject} = useBackendId()
     const backendId = projectId ? backendIdForProject(projectId) : null
-    const {figureData, progress} = useFigureData(figureDataUri)
-    const [figureInterface, setFigureInterface] = useState<FigureInterface | undefined>()
+    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri)
+    const [figureInterface, setFigureInterfaceInternal] = useState<FigureInterface | undefined>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
     const googleSignInClient = useGoogleSignInClient()
     const taskManager = useKacheryCloudTaskManager()
@@ -144,17 +147,20 @@ const Figure2: FunctionComponent<Props> = ({width, height}) => {
             figureId: id,
             viewUrl,
             figureData,
+            figureDataUri,
+            figureDataSize,
             iframeElement,
             googleSignInClient,
             taskManager,
             localMode
         })
+        setFigureInterfaceInternal(figureInterface)
         setFigureInterface(figureInterface)
 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager, localMode])
+    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri])
 
     const handleSetUrlState = useCallback((state: {[key: string]: any}) => {
         const newLocation = {

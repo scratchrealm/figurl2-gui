@@ -106,9 +106,12 @@ export const fileDownload = async (hashAlg: string, hash: string, onProgress: (a
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
-        const downloadUrl = await fileDownloadUrl(hashAlg, hash)
+        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash) || {}
         if (!downloadUrl) {
             throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
+        }
+        if ((size) && (onProgress)) {
+            onProgress({loaded: 0, total: size})
         }
         let timestampProgress = Date.now()
         let firstProgress = true
@@ -215,7 +218,7 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     return downloadUrl
 }
 
-export const fileDownloadUrl = async (hashAlg: string, hash: string): Promise<string | undefined> => {
+export const fileDownloadUrl = async (hashAlg: string, hash: string): Promise<{url: string, size?: number} | undefined> => {
     const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
     // const url = 'http://localhost:3001/api/kacherycloud'
     const req: FindFileRequest = {
@@ -233,7 +236,10 @@ export const fileDownloadUrl = async (hashAlg: string, hash: string): Promise<st
         throw Error('Unexpected findFile response')
     }
     if ((resp.found) && (resp.url)) {
-        return resp.url
+        return {
+            url: resp.url,
+            size: resp.size
+        }
     }
     else {
         return undefined
