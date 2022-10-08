@@ -102,6 +102,11 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                         <Button color="inherit" onClick={handleLogin}>Sign in</Button>
                     )
                 }
+                {/* <LoginGithub -- at some point in the future we can login via github - see ../LoginGithub folder
+                    clientId="..."
+                    onSuccess={handleLoginSuccess}
+                    onFailure={handleLoginFailure}
+                /> */}
                 </Toolbar>
             </AppBar>
             <ModalWindow
