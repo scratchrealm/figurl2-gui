@@ -97,7 +97,8 @@ export const useRoute2 = () => {
     const label = query.label ? query.label as any as string : 'untitled'
 
     const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, projectId?: string, label?: string}) => {
-        const query2 = {...query}
+        // const query2 = {...query}
+        const query2: {[key: string]: string} = {}
         let pathname2 = location.pathname
         if (o.routePath) pathname2 = o.routePath
         if (o.dataUri !== undefined) {
@@ -109,7 +110,7 @@ export const useRoute2 = () => {
         if (o.projectId !== undefined) query2.project = o.projectId
         const search2 = queryString(query2)
         history.push({...location, pathname: pathname2, search: search2})
-    }, [location, history, query])
+    }, [location, history])
 
     return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label}
 }
