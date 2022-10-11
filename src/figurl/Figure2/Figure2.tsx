@@ -210,7 +210,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             />
             <ModalWindow
                 open={permissionsWindowVisible}
-                onClose={closePermissionsWindow}
+                onClose={undefined}
             >
                 <PermissionsWindow
                     onClose={closePermissionsWindow}

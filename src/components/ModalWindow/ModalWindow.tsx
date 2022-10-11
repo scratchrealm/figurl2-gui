@@ -20,7 +20,7 @@ const useStyles = makeStyles((theme) => ({
 
 type Props = {
     open: boolean
-    onClose: () => void
+    onClose?: () => void
 }
 
 const ModalWindow: FunctionComponent<Props> = ({ onClose, open, children }) => {

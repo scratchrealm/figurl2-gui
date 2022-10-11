@@ -19,10 +19,12 @@ const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose})
     const {clientVerified, registerClientUrl, refresh: refreshVerifyClient, clientId} = useVerifyClient()
 
     useEffect(() => {
+        figureInterface.authorizePermission('store-file', undefined)
         let cancel = false
         ;(async () => {
             while (!cancel) {
-                if (figureInterface.hasPermission('store-file')) {
+                const p = figureInterface.hasPermission('store-file')
+                if (p !== undefined) {
                     onClose()
                 }
                 await sleepMsec(300)
@@ -57,6 +59,7 @@ const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose})
             <p>To allow this, click "Authorize" below.</p>
             <div>
                 <Button onClick={() => {figureInterface.authorizePermission('store-file', true)}}>Authorize this application</Button>
+                <Button onClick={() => {figureInterface.authorizePermission('store-file', false)}}>Cancel</Button>
             </div>
             <hr />
             <div style={{fontSize: 10}}>Client ID: <Hyperlink href={`https://cloud.kacheryhub.org/client/${clientId}`} target="_blank">{clientId}...</Hyperlink></div>

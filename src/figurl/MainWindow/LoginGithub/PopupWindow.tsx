@@ -31,10 +31,8 @@ class PopupWindow {
       this._iid = window.setInterval(() => {
         try {
           const popup = this.window;
-          console.log('--- b')
 
           if (!popup || (popup.closed === true)) {
-            console.log('--- c')
             this.close();
 
             reject(new Error('The popup was closed'));

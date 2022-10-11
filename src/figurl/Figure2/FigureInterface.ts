@@ -164,12 +164,12 @@ class FigureInterface {
     public get figureId() {
         return this.a.figureId
     }
-    async authorizePermission(purpose: 'store-file', authorized: boolean) {
+    async authorizePermission(purpose: 'store-file', authorized: boolean | undefined) {
         this.#authorizedPermissions['store-file'] = authorized
         sleepMsec(400) // so we can be sure we've detected it
     }
     hasPermission(purpose: 'store-file') {
-        return this.#authorizedPermissions['store-file'] || false
+        return this.#authorizedPermissions['store-file']
     }
     onRequestPermissions(callback: (purpose: string) => void) {
         this.#onRequestPermissionsCallback = callback
@@ -358,10 +358,11 @@ class FigureInterface {
         }
     }
     async verifyPermissions(purpose: 'store-file') {
-        if (this.#authorizedPermissions[purpose]) return true
+        if (this.#authorizedPermissions[purpose] === true) return true
+        this.#authorizedPermissions[purpose] = undefined
         this.#onRequestPermissionsCallback('store-file')
         while (true) {
-            if (this.#authorizedPermissions[purpose]) return true
+            if (this.#authorizedPermissions[purpose] !== undefined) return this.#authorizedPermissions[purpose]
             await sleepMsec(200)
         }
     }
