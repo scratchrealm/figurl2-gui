@@ -14,6 +14,7 @@ import kacheryCloudStoreFile from './kacheryCloudStoreFile'
 import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
+import zenodoDownload, { zenodoDownloadUrl } from './zenodoDownload'
 (window as any).figurlFileData = {}
 
 class FigureInterface {
@@ -224,6 +225,12 @@ class FigureInterface {
 
             data = await fileDownload('sha1-enc', sha1_enc_path, onProgress, {localMode})
         }
+        else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
+            const a = uri.split('?')[0].split('/')
+            const recordId = a[2]
+            const fileName = a.slice(3).join('/')
+            data = await zenodoDownload(recordId, fileName, onProgress, {sandbox: uri.startsWith('zenodo-sandbox://')})
+        }
         else {
             throw Error(`Invalid uri: ${uri}`)
         }
@@ -281,6 +288,16 @@ class FigureInterface {
             if (size) {
                 this.#requestedFiles[uri].size = size
             }
+            return {
+                type: 'getFileDataUrl',
+                fileDataUrl: url
+            }
+        }
+        else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
+            const a = uri.split('?')[0].split('/')
+            const recordId = a[2]
+            const fileName = a.slice(3).join('/')
+            const url = await zenodoDownloadUrl(recordId, fileName, {sandbox: uri.startsWith('zenodo-sandbox://')})
             return {
                 type: 'getFileDataUrl',
                 fileDataUrl: url

@@ -8,13 +8,14 @@ import useBackendId from 'figurl/useBackendId';
 import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
-import React, { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
 import FigureInterface from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
 import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
+import zenodoDownload from './zenodoDownload';
 
 type Props = {
     width: number
@@ -62,6 +63,12 @@ export const useFigureData = (dataUri: string | undefined) => {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
                 data = await fileDownload('sha1-enc', sha1_enc_path, reportProgress, {localMode})
+            }
+            else if ((dataUri.startsWith('zenodo://')) || (dataUri.startsWith('zenodo-sandbox://'))) {
+                const a = dataUri.split('?')[0].split('/')
+                const recordId = a[2]
+                const fileName = a.slice(3).join('/')
+                data = await zenodoDownload(recordId, fileName, reportProgress, {sandbox: dataUri.startsWith('zenodo-sandbox://')})
             }
             else {
                 throw Error(`Unexpected data URI: ${dataUri}`)
