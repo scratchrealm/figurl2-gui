@@ -1,8 +1,11 @@
 import axios from 'axios';
+import { signMessage } from 'commonInterface/crypto/signatures';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
-import * as http from 'http'
-import * as crypto from 'crypto'
+import * as crypto from 'crypto';
+import * as http from 'http';
+import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 import loadLocalSha1TextFile from './loadLocalSha1TextFile';
+import validateObject, { isOneOf } from './viewInterface/validateObject';
 
 export type FindIpfsFileRequest = {
     payload: {
@@ -49,29 +52,78 @@ export const isFindIpfsFileResponse = (x: any): x is FindIpfsFileResponse => {
     })
 }
 
+// export type FindFileRequest = {
+//     payload: {
+//         type: 'findFile'
+//         timestamp: number
+//         hashAlg: string
+//         hash: string
+//         projectId?: string
+//     }
+//     fromClientId?: NodeId
+//     signature?: Signature
+// }
+
+// export const isFindFileRequest = (x: any): x is FindFileRequest => {
+//     const isPayload = (y: any) => {
+//         return _validateObject(y, {
+//             type: isEqualTo('findFile'),
+//             timestamp: isNumber,
+//             hashAlg: isString,
+//             hash: isString,
+//             projectId: optional(isString)
+//         })
+//     }
+//     return _validateObject(x, {
+//         payload: isPayload,
+//         fromClientId: optional(isNodeId),
+//         signature: optional(isSignature)
+//     })
+// }
+
+// export type FindFileResponse = {
+//     type: 'findFile'
+//     found: boolean
+//     projectId?: string
+//     size?: number
+//     url?: string
+//     timestampCreated?: number
+//     timestampAccessed?: number
+// }
+
+// export const isFindFileResponse = (x: any): x is FindFileResponse => {
+//     return _validateObject(x, {
+//         type: isEqualTo('findFile'),
+//         found: isBoolean,
+//         projectId: optional(isString),
+//         size: optional(isNumber),
+//         url: optional(isString),
+//         timestampCreated: optional(isNumber),
+//         timestampAccessed: optional(isNumber)
+//     })
+// }
+
 export type FindFileRequest = {
     payload: {
         type: 'findFile'
         timestamp: number
-        hashAlg: string
+        hashAlg: 'sha1'
         hash: string
-        projectId?: string
     }
-    fromClientId?: NodeId
-    signature?: Signature
+    fromClientId: NodeId
+    signature: Signature
 }
 
 export const isFindFileRequest = (x: any): x is FindFileRequest => {
     const isPayload = (y: any) => {
-        return _validateObject(y, {
+        return validateObject(y, {
             type: isEqualTo('findFile'),
             timestamp: isNumber,
-            hashAlg: isString,
-            hash: isString,
-            projectId: optional(isString)
+            hashAlg: isOneOf([isEqualTo('sha1')]),
+            hash: isString
         })
     }
-    return _validateObject(x, {
+    return validateObject(x, {
         payload: isPayload,
         fromClientId: optional(isNodeId),
         signature: optional(isSignature)
@@ -81,22 +133,22 @@ export const isFindFileRequest = (x: any): x is FindFileRequest => {
 export type FindFileResponse = {
     type: 'findFile'
     found: boolean
-    projectId?: string
     size?: number
     url?: string
-    timestampCreated?: number
-    timestampAccessed?: number
+    bucketUri?: string
+    objectKey?: string
+    cacheHit?: boolean
 }
 
 export const isFindFileResponse = (x: any): x is FindFileResponse => {
-    return _validateObject(x, {
+    return validateObject(x, {
         type: isEqualTo('findFile'),
         found: isBoolean,
-        projectId: optional(isString),
         size: optional(isNumber),
         url: optional(isString),
-        timestampCreated: optional(isNumber),
-        timestampAccessed: optional(isNumber)
+        bucketUri: optional(isString),
+        objectKey: optional(isString),
+        cacheHit: optional(isBoolean)
     })
 }
 
@@ -223,15 +275,20 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
 }
 
 export const fileDownloadUrl = async (hashAlg: string, hash: string): Promise<{url: string, size?: number} | undefined> => {
-    const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
+    const {clientId, keyPair} = await getKacheryCloudClientInfo()
+    const url = 'https://kachery-gateway.figurl.org/api/gateway'
     // const url = 'http://localhost:3001/api/kacherycloud'
+    const payload = {
+        type: 'findFile' as 'findFile',
+        timestamp: Date.now(),
+        hashAlg: hashAlg as 'sha1',
+        hash
+    }
+    const signature = await signMessage(payload, keyPair)
     const req: FindFileRequest = {
-        payload: {
-            type: 'findFile',
-            timestamp: Date.now(),
-            hashAlg,
-            hash
-        }
+        payload,
+        fromClientId: clientId,
+        signature
     }
     const x = await axios.post(url, req)
     const resp = x.data

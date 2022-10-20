@@ -2,12 +2,13 @@ import axios from 'axios';
 import { signMessage } from 'commonInterface/crypto/signatures';
 import { sha1OfString } from 'commonInterface/kacheryTypes';
 import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription';
-import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from 'types/KacherycloudRequest';
+import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 
 const kacheryCloudStoreFile = async (fileData: string): Promise<string> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
-    const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
+    // const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
+    const url = 'https://kachery-gateway.figurl.org/api/gateway'
     const sha1 = sha1OfString(fileData)
     const uri = `sha1://${sha1}`
     const timer = Date.now()
@@ -63,7 +64,8 @@ const kacheryCloudStoreFile = async (fileData: string): Promise<string> => {
         timestamp: Date.now(),
         objectKey,
         hashAlg: 'sha1' as 'sha1',
-        hash: sha1.toString()
+        hash: sha1.toString(),
+        size: fileData.length
     }
     const signature2 = await signMessage(payload2, keyPair)
     const req2: FinalizeFileUploadRequest = {
