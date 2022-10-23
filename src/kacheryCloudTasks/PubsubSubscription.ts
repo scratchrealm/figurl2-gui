@@ -57,7 +57,7 @@ class PubsubSubscription {
                             // this means the network has glitched
                             // so we need to recreate the client
                             thisPubnubCanceled = true // don't listen to any more events from this one
-                            recreatePubnubClient()
+                            // recreatePubnubClient()
                         }
                     }
                 })
@@ -67,8 +67,8 @@ class PubsubSubscription {
             })
             this.#pubnub = pubnub
         }
-        recreatePubnubClient()
-        this._startRenewingToken()
+        // recreatePubnubClient()
+        // this._startRenewingToken()
     }
     onMessage(callback: MessageCallback) {
         this.#messageCallbacks.push(callback)
