@@ -432,6 +432,9 @@ class FigureInterface {
     }
     async handleStoreGithubFileRequest(request: StoreGithubFileRequestFigurl): Promise<StoreGithubFileResponseFigurl> {
         let {fileData, uri} = request
+        if (!uri.startsWith('github://')) {
+            throw Error(`Invalid github URI: ${uri}`)
+        }
         if (!(await this.verifyPermissions('store-github-file', {uri}))) {
             return {
                 type: 'storeGithubFile',
