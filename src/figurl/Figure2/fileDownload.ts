@@ -158,11 +158,11 @@ const ipfsDownload = async (cid: string) => {
     return y.data
 }
 
-export const fileDownload = async (hashAlg: string, hash: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean}) => {
+export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean}) => {
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
-        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash) || {}
+        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl) || {}
         if (!downloadUrl) {
             throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
         }
@@ -274,9 +274,9 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     return downloadUrl
 }
 
-export const fileDownloadUrl = async (hashAlg: string, hash: string): Promise<{url: string, size?: number} | undefined> => {
+export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string): Promise<{url: string, size?: number} | undefined> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
-    const url = 'https://kachery-gateway.figurl.org/api/gateway'
+    const url = `${kacheryGatewayUrl}/api/gateway`
     // const url = 'http://localhost:3001/api/kacherycloud'
     const payload = {
         type: 'findFile' as 'findFile',

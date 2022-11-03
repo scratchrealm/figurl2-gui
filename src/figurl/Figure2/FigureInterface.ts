@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios'
-import { UserId } from 'commonInterface/kacheryTypes'
+import { JSONStringifyDeterministic, UserId } from 'commonInterface/kacheryTypes'
 import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
@@ -8,10 +8,11 @@ import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { MutableRefObject } from "react"
+import { isLoadGistFileResponse, isLoadGithubFileResponse, isStoreGithubFileResponse, LoadGistFileRequest, LoadGithubFileRequest, StoreGithubFileRequest } from 'types/GithubRequest'
 import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './fileDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import kacheryCloudStoreFile from './kacheryCloudStoreFile'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, StoreGithubFileRequest as StoreGithubFileRequestFigurl, StoreGithubFileResponse as StoreGithubFileResponseFigurl, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 import zenodoDownload, { zenodoDownloadUrl } from './zenodoDownload'
@@ -22,13 +23,11 @@ class FigureInterface {
     #taskJobs: {[key: string]: TaskJob<any>} = {}
     #feeds: {[key: string]: KacheryCloudFeed} = {}
     #closed = false
-    #onRequestPermissionsCallback = (purpose: string) => {}
+    #onRequestPermissionsCallback = (purpose: 'store-file' | 'store-github-file', params: any) => {}
     #onSetUrlStateCallback = (state: {[key: string]: any}) => {}
     #requestedFileUris: string[] = []
     #requestedFiles: {[uri: string]: {size?: number, name?: string}} = {}
-    #authorizedPermissions = {
-        'store-file': undefined as (boolean | undefined)
-    }
+    #authorizedPermissions: {[key: string]: boolean | undefined} = {}
     constructor(private a: {
         projectId: string | undefined,
         backendId: string | null,
@@ -40,7 +39,8 @@ class FigureInterface {
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
         googleSignInClient: GoogleSignInClient,
         taskManager?: KacheryCloudTaskManager,
-        localMode: boolean
+        localMode: boolean,
+        kacheryGatewayUrl: string
     }) {
         if (a.figureDataUri) {
             this.#requestedFileUris.push(a.figureDataUri)
@@ -122,6 +122,15 @@ class FigureInterface {
                                 })
                             })
                         }
+                        else if (request.type === 'storeGithubFile') {
+                            this.handleStoreGithubFileRequest(request).then(response => {
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
+                            })
+                        }
                         else if (request.type === 'setUrlState') {
                             this.handleSetUrlState(request).then(response => {
                                 this._sendMessageToChild({
@@ -165,14 +174,16 @@ class FigureInterface {
     public get figureId() {
         return this.a.figureId
     }
-    async authorizePermission(purpose: 'store-file', authorized: boolean | undefined) {
-        this.#authorizedPermissions['store-file'] = authorized
+    async authorizePermission(purpose: 'store-file' | 'store-github-file', params: any, authorized: boolean | undefined) {
+        const k = keyForAuthorizedPermissions(purpose, params)
+        this.#authorizedPermissions[k] = authorized
         sleepMsec(400) // so we can be sure we've detected it
     }
-    hasPermission(purpose: 'store-file') {
-        return this.#authorizedPermissions['store-file']
+    hasPermission(purpose: 'store-file' | 'store-github-file', params: any) {
+        const k = keyForAuthorizedPermissions(purpose, params)
+        return this.#authorizedPermissions[k]
     }
-    onRequestPermissions(callback: (purpose: string) => void) {
+    onRequestPermissions(callback: (purpose: 'store-file' | 'store-github-file', params: any) => void) {
         this.#onRequestPermissionsCallback = callback
     }
     onSetUrlState(callback: (state: {[key: string]: any}) => void) {
@@ -206,7 +217,7 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            data = await fileDownload('sha1', sha1, onProgress, {localMode})
+            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode})
         }
         else if (uri.startsWith('jot://')) {
             const jotId = uri.split('?')[0].split('/')[2]
@@ -217,13 +228,19 @@ class FigureInterface {
             }
             const a = uri0.split('?')[0].split('/')
             const sha1 = a[2]
-            data = await fileDownload('sha1', sha1, onProgress, {localMode})
+            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode})
+        }
+        else if (uri.startsWith('gist://')) {
+            data = await loadGistDataFromUri(uri)
+        }
+        else if (uri.startsWith('github://')) {
+            data = await loadGithubFileDataFromUri(uri)
         }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            data = await fileDownload('sha1-enc', sha1_enc_path, onProgress, {localMode})
+            data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode})
         }
         else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
             const a = uri.split('?')[0].split('/')
@@ -265,7 +282,7 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            const {url, size} = await fileDownloadUrl('sha1', sha1) || {}
+            const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl) || {}
             if (!url) {
                 throw Error('Unable to get file download url')
             }
@@ -281,7 +298,7 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path) || {}
+            const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl) || {}
             if (!url) {
                 throw Error('Unable to get file download url')
             }
@@ -374,17 +391,18 @@ class FigureInterface {
             value: value !== undefined ? value : null
         }
     }
-    async verifyPermissions(purpose: 'store-file') {
-        if (this.#authorizedPermissions[purpose] === true) return true
-        this.#authorizedPermissions[purpose] = undefined
-        this.#onRequestPermissionsCallback('store-file')
+    async verifyPermissions(purpose: 'store-file' | 'store-github-file', params: any) {
+        const k = `${purpose}.${JSONStringifyDeterministic(params)}`
+        if (this.#authorizedPermissions[k] === true) return true
+        this.#authorizedPermissions[k] = undefined
+        this.#onRequestPermissionsCallback(purpose, params)
         while (true) {
-            if (this.#authorizedPermissions[purpose] !== undefined) return this.#authorizedPermissions[purpose]
+            if (this.#authorizedPermissions[k] !== undefined) return this.#authorizedPermissions[k]
             await sleepMsec(200)
         }
     }
     async handleStoreFileRequest(request: StoreFileRequest): Promise<StoreFileResponse> {
-        if (!(await this.verifyPermissions('store-file'))) {
+        if (!(await this.verifyPermissions('store-file', {}))) {
             return {
                 type: 'storeFile',
                 uri: undefined
@@ -392,7 +410,7 @@ class FigureInterface {
         }
         
         let {fileData} = request
-        let uri = await kacheryCloudStoreFile(fileData)
+        let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl)
         if (!uri) throw Error('Error storing file')
         if (request.jotId) {
             if ((!this.a.googleSignInClient.userId) || (!this.a.googleSignInClient.idToken)) {
@@ -412,11 +430,46 @@ class FigureInterface {
             uri
         }
     }
+    async handleStoreGithubFileRequest(request: StoreGithubFileRequestFigurl): Promise<StoreGithubFileResponseFigurl> {
+        let {fileData, uri} = request
+        if (!(await this.verifyPermissions('store-github-file', {uri}))) {
+            return {
+                type: 'storeGithubFile',
+                success: false,
+                error: 'Permission not granted'
+            }
+        }
+        const githubToken = getGithubTokenFromLocalStorage()
+        if (!githubToken) {
+            return {
+                type: 'storeGithubFile',
+                success: false,
+                error: 'No github token'
+            }
+        }
+        try {
+            await storeGithubFile({fileData, uri, githubToken})
+        }
+        catch(err: any) {
+            return {
+                type: 'storeGithubFile',
+                success: false,
+                error: `Error storing github file: ${err.message}`
+            }
+        }
+        return {
+            type: 'storeGithubFile',
+            success: true
+        }
+    }
     async handleSetUrlState(request: SetUrlStateRequest): Promise<SetUrlStateResponse> {
         this.#onSetUrlStateCallback(request.state)
         return {
             type: 'setUrlState'
         }
+    }
+    public get kacheryGatewayUrl() {
+        return this.a.kacheryGatewayUrl
     }
     _sendMessageToChild(msg: MessageToChild) {
         if (!this.a.iframeElement.current) {
@@ -466,6 +519,117 @@ export const setJotValue = async (jotId: string, value: string, o: {userId: stri
         throw Error('Unexpected response in setJotValue')
     }
     return `jot://${jotId}`
+}
+
+export const loadGistDataFromUri = async (uri: string) => {
+    const parseGistUri = (uri: string) => {
+        const a = uri.split('?')[0].split('/')
+        if (a.length !== 5) {
+            throw Error(`Invalid gist uri: ${uri}`)
+        }
+        return {
+            userName: a[2],
+            gistId: a[3],
+            fileName: a[4]
+        }
+    }
+    const loadGistFile = async ({userName, gistId, fileName}: {userName: string, gistId: string, fileName: string}) => {
+        const req: LoadGistFileRequest = {
+            type: 'loadGistFile',
+            userName,
+            gistId,
+            fileName
+        }
+        const r = await axios.post('/api/github', req)
+        const resp = r.data
+        if (!isLoadGistFileResponse(resp)) {
+            console.warn(resp)
+            throw Error('Invalid loadGistFile response')
+        }
+        return resp.content
+    }
+    const {userName, gistId, fileName} = parseGistUri(uri)
+    const contentText = await loadGistFile({userName, gistId, fileName})
+    return JSON.parse(contentText)
+}
+
+const parseGithubFileUri = (uri: string) => {
+    const a = uri.split('?')[0].split('/')
+    if (a.length < 6) {
+        throw Error(`Invalid github file uri: ${uri}`)
+    }
+    return {
+        userName: a[2],
+        repoName: a[3],
+        branchName: a[4],
+        fileName: a.slice(5).join('/')
+    }
+}
+
+export const loadGithubFileDataFromUri = async (uri: string) => {
+    const loadGithubFile = async ({userName, repoName, branchName, fileName}: {userName: string, repoName: string, branchName: string, fileName: string}) => {
+        const req: LoadGithubFileRequest = {
+            type: 'loadGithubFile',
+            userName,
+            repoName,
+            branchName,
+            fileName
+        }
+        const r = await axios.post('/api/github', req)
+        const resp = r.data
+        if (!isLoadGithubFileResponse(resp)) {
+            console.warn(resp)
+            throw Error('Invalid loadGithubFile response')
+        }
+        return resp.content
+    }
+    const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
+    const contentText = await loadGithubFile({userName, repoName, branchName, fileName})
+    return JSON.parse(contentText)
+}
+
+const storeGithubFile = async ({fileData, uri, githubToken}: {fileData: string, uri: string, githubToken: string}) => {
+    const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
+    const req: StoreGithubFileRequest = {
+        type: 'storeGithubFile',
+        userName,
+        repoName,
+        branchName,
+        fileName,
+        content: fileData,
+        githubToken
+    }
+    const r = await axios.post('/api/github', req)
+    const resp = r.data
+    if (!isStoreGithubFileResponse(resp)) {
+        console.warn(resp)
+        throw Error('Invalid loadGithubFile response')
+    }
+    if (!resp.success) {
+        throw Error(`Error storing github file: ${resp.error}`)
+    }
+}
+
+export const setGithubTokenToLocalStorage = (token: string) => {
+    localStorage.setItem('githubToken', JSON.stringify({
+        token
+    }))
+}
+
+export const getGithubTokenFromLocalStorage = () => {
+    const a = localStorage.getItem('githubToken')
+    if (!a) return undefined
+    try {
+        const b = JSON.parse(a)
+        return b.token
+    }
+    catch {
+        return undefined
+    }
+}
+
+const keyForAuthorizedPermissions = (purpose: 'store-file' | 'store-github-file', params: any) => {
+    return `${purpose}.${JSONStringifyDeterministic(params)}`
 }
 
 export default FigureInterface

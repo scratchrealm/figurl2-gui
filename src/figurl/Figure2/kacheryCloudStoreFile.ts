@@ -5,10 +5,10 @@ import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription';
 import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 
-const kacheryCloudStoreFile = async (fileData: string): Promise<string> => {
+const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string): Promise<string> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     // const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
-    const url = 'https://kachery-gateway.figurl.org/api/gateway'
+    const url = `${kacheryGatewayUrl}/api/gateway`
     const sha1 = sha1OfString(fileData)
     const uri = `sha1://${sha1}`
     const timer = Date.now()

@@ -55,6 +55,7 @@
     "@types/file-saver": "^2.0.4",
     "@types/react-router-dom": "5.1.2",
     "@types/react-syntax-highlighter": "^13.5.2",
+    "octonode": "^0.10.2",
     "tweetnacl": "^1.0.3",
     "vercel": "^22.0.1"
   }

@@ -10,8 +10,10 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import FigureInterface from './FigureInterface';
+import FigureInterface, { loadGistDataFromUri, loadGithubFileDataFromUri } from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
+import getZoneInfo from './getZoneInfo';
+import GithubPermissionsWindow from './GithubPermissionsWindow';
 import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
@@ -27,7 +29,7 @@ type Progress = {
     onProgress: (callback: (a: {loaded: number, total: number}) => void) => void
 }
 
-export const useFigureData = (dataUri: string | undefined) => {
+export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined) => {
     const [figureData, setFigureData] = useState<any>()
     const [figureDataSize, setFigureDataSize] = useState<number | undefined>()
     const {progress, reportProgress} = useMemo(() => {
@@ -45,6 +47,7 @@ export const useFigureData = (dataUri: string | undefined) => {
     }, [])
     const localMode = useLocalMode()
     useEffect(() => {
+        if (!kacheryGatewayUrl) return
         ;(async () => {
             if (!dataUri) return
             let data
@@ -57,12 +60,18 @@ export const useFigureData = (dataUri: string | undefined) => {
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, reportProgress, {localMode})
+                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, {localMode})
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path, reportProgress, {localMode})
+                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode})
+            }
+            else if (dataUri.startsWith('gist://')) {
+                data = await loadGistDataFromUri(dataUri)
+            }
+            else if (dataUri.startsWith('github://')) {
+                data = await loadGithubFileDataFromUri(dataUri)
             }
             else if ((dataUri.startsWith('zenodo://')) || (dataUri.startsWith('zenodo-sandbox://'))) {
                 const a = dataUri.split('?')[0].split('/')
@@ -76,7 +85,7 @@ export const useFigureData = (dataUri: string | undefined) => {
             data = await deserializeReturnValue(data)
             setFigureData(data)
         })()
-    }, [dataUri, reportProgress, localMode])
+    }, [dataUri, reportProgress, localMode, kacheryGatewayUrl])
     return {figureData, progress, figureDataUri: dataUri, figureDataSize}
 }
 
@@ -102,6 +111,7 @@ export const useRoute2 = () => {
     const projectId = query.project ? query.project as string : undefined
     const backendId = query.backend ? query.backend as string : undefined
     const label = query.label ? query.label as any as string : 'untitled'
+    const zone: string | undefined = query.zone ? query.zone as any as string : undefined
 
     const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, projectId?: string, label?: string}) => {
         // const query2 = {...query}
@@ -119,26 +129,42 @@ export const useRoute2 = () => {
         history.push({...location, pathname: pathname2, search: search2})
     }, [location, history])
 
-    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label}
+    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label, zone}
 }
 
 const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) => {
-    const {viewUrl, figureDataUri, projectId} = useRoute2()
+    const {viewUrl, figureDataUri, projectId, zone} = useRoute2()
     const {backendIdForProject} = useBackendId()
     const backendId = projectId ? backendIdForProject(projectId) : null
-    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri)
     const [figureInterface, setFigureInterfaceInternal] = useState<FigureInterface | undefined>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
     const googleSignInClient = useGoogleSignInClient()
     const taskManager = useKacheryCloudTaskManager()
     const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
+    const {visible: githubPermissionsWindowVisible, handleOpen: openGithubPermissionsWindow, handleClose: closeGithubPermissionsWindow} = useModalDialog()
+    const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
+    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl)
+    const [permissionsParams, setPermissionsParams] = useState<any>()
 
     useEffect(() => {
         progress.onProgress(({loaded, total}) => {
             setProgressValue({loaded, total})
         })
     }, [progress])
+    useEffect(() => {
+        if (zone) {
+            getZoneInfo(zone).then(resp => {
+                if (!resp.found) {
+                    throw Error(`Unrecognized zone: ${zone}`)
+                }
+                setKacheryGatewayUrl(resp.kacheryGatewayUrl)
+            })
+        }
+        else {
+            setKacheryGatewayUrl(`https://kachery-gateway.figurl.org`)
+        }
+    }, [zone])
     const location = useLocation()
     const history = useHistory()
     const qs = location.search.slice(1)
@@ -148,6 +174,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         if (!figureData) return
         if (!viewUrl) return
         if (!googleSignInClient) return
+        if (!kacheryGatewayUrl) return
         const id = randomAlphaString(10)
         const figureInterface = new FigureInterface({
             projectId,
@@ -160,7 +187,8 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             iframeElement,
             googleSignInClient,
             taskManager,
-            localMode
+            localMode,
+            kacheryGatewayUrl
         })
         setFigureInterfaceInternal(figureInterface)
         setFigureInterface(figureInterface)
@@ -168,7 +196,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri])
+    }, [viewUrl, figureData, projectId, backendId, googleSignInClient, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl])
 
     const handleSetUrlState = useCallback((state: {[key: string]: any}) => {
         const newLocation = {
@@ -180,9 +208,18 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
 
     useEffect(() => {
         if (!figureInterface) return
-        figureInterface.onRequestPermissions(openPermissionsWindow)
+        figureInterface.onRequestPermissions((purpose, params) => {
+            if (purpose === 'store-file') {
+                setPermissionsParams(params)
+                openPermissionsWindow()
+            }
+            else if (purpose === 'store-github-file') {
+                setPermissionsParams(params)
+                openGithubPermissionsWindow()
+            }
+        })
         figureInterface.onSetUrlState(handleSetUrlState)
-    }, [figureInterface, openPermissionsWindow, handleSetUrlState])
+    }, [figureInterface, openPermissionsWindow, openGithubPermissionsWindow, handleSetUrlState])
 
     const parentOrigin = window.location.protocol + '//' + window.location.host
     let src = useMemo(() => {
@@ -222,6 +259,16 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
                 <PermissionsWindow
                     onClose={closePermissionsWindow}
                     figureInterface={figureInterface}
+                />
+            </ModalWindow>
+            <ModalWindow
+                open={githubPermissionsWindowVisible}
+                onClose={undefined}
+            >
+                <GithubPermissionsWindow
+                    onClose={closeGithubPermissionsWindow}
+                    figureInterface={figureInterface}
+                    params={permissionsParams}
                 />
             </ModalWindow>
         </div>

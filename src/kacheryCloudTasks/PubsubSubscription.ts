@@ -1,11 +1,11 @@
 import { randomAlphaString } from 'components/misc/randomAlphaString';
-import PubNub, { StatusEvent } from 'pubnub';
+import PubNub from 'pubnub';
 import { isSubscribeToPubsubChannelResponse, SubscribeToPubsubChannelRequest } from "types/KacherycloudRequest";
 import { PubsubChannelName, PubsubMessage } from "types/PubsubMessage";
 import kacherycloudApiRequest from "./kacherycloudApiRequest";
 
-const ENABLE_PUBNUB_LOG_VERBOSITY = false
-const ENABLE_PUBNUB_BUG_WORKAROUND = true
+// const ENABLE_PUBNUB_LOG_VERBOSITY = false
+// const ENABLE_PUBNUB_BUG_WORKAROUND = true
 
 type MessageCallback = (channelName: PubsubChannelName, message: PubsubMessage) => void
 
@@ -17,56 +17,56 @@ class PubsubSubscription {
         projectId: string,
         channelName: PubsubChannelName
     }) {
-        const recreatePubnubClient = async () => {
-            let thisPubnubCanceled = false
-            if (this.#pubnub !== undefined) {
-                this.#pubnub.unsubscribeAll()
-                this.#pubnub = undefined
-            }
-            const req = this._formSubscribeRequest()
-            const resp = await kacherycloudApiRequest(req, {retryInterval: 5000})
-            if (!isSubscribeToPubsubChannelResponse(resp)) {
-                throw Error('Unexpected response to subscribeToPubsubChannel')
-            }
-            const {subscribeKey, token, uuid, pubsubChannelName} = resp
-            var pubnub = new PubNub({
-                subscribeKey,
-                uuid,
-                logVerbosity: ENABLE_PUBNUB_LOG_VERBOSITY
-            })
-            pubnub.setToken(token)
-            console.info(`Subscribing to channel: ${pubsubChannelName}`)
-            pubnub.addListener({
-                message: (messageEvent => {
-                    if (thisPubnubCanceled) return
-                    console.info('RECEIVED PUBSUB MSG:', messageEvent.message)
+        // const recreatePubnubClient = async () => {
+        //     let thisPubnubCanceled = false
+        //     if (this.#pubnub !== undefined) {
+        //         this.#pubnub.unsubscribeAll()
+        //         this.#pubnub = undefined
+        //     }
+        //     const req = this._formSubscribeRequest()
+        //     const resp = await kacherycloudApiRequest(req, {retryInterval: 5000})
+        //     if (!isSubscribeToPubsubChannelResponse(resp)) {
+        //         throw Error('Unexpected response to subscribeToPubsubChannel')
+        //     }
+        //     const {subscribeKey, token, uuid, pubsubChannelName} = resp
+        //     var pubnub = new PubNub({
+        //         subscribeKey,
+        //         uuid,
+        //         logVerbosity: ENABLE_PUBNUB_LOG_VERBOSITY
+        //     })
+        //     pubnub.setToken(token)
+        //     console.info(`Subscribing to channel: ${pubsubChannelName}`)
+        //     pubnub.addListener({
+        //         message: (messageEvent => {
+        //             if (thisPubnubCanceled) return
+        //             console.info('RECEIVED PUBSUB MSG:', messageEvent.message)
 
-                    // return immediately so we don't have the potential to cause problems
-                    // with pubnub
-                    setTimeout(() => {
-                        this.#messageCallbacks.forEach(cb => {
-                            cb(d.channelName, messageEvent.message)
-                        })
-                    }, 1)
-                }),
-                status: ((e: StatusEvent) => {
-                    if (thisPubnubCanceled) return
-                    console.log('PUBNUB status', e)
-                    if (ENABLE_PUBNUB_BUG_WORKAROUND) {
-                        if (e.category === 'PNNetworkUpCategory') {
-                            // this means the network has glitched
-                            // so we need to recreate the client
-                            thisPubnubCanceled = true // don't listen to any more events from this one
-                            // recreatePubnubClient()
-                        }
-                    }
-                })
-            })
-            pubnub.subscribe({
-                channels: [pubsubChannelName]
-            })
-            this.#pubnub = pubnub
-        }
+        //             // return immediately so we don't have the potential to cause problems
+        //             // with pubnub
+        //             setTimeout(() => {
+        //                 this.#messageCallbacks.forEach(cb => {
+        //                     cb(d.channelName, messageEvent.message)
+        //                 })
+        //             }, 1)
+        //         }),
+        //         status: ((e: StatusEvent) => {
+        //             if (thisPubnubCanceled) return
+        //             console.log('PUBNUB status', e)
+        //             if (ENABLE_PUBNUB_BUG_WORKAROUND) {
+        //                 if (e.category === 'PNNetworkUpCategory') {
+        //                     // this means the network has glitched
+        //                     // so we need to recreate the client
+        //                     thisPubnubCanceled = true // don't listen to any more events from this one
+        //                     // recreatePubnubClient()
+        //                 }
+        //             }
+        //         })
+        //     })
+        //     pubnub.subscribe({
+        //         channels: [pubsubChannelName]
+        //     })
+        //     this.#pubnub = pubnub
+        // }
         // recreatePubnubClient()
         // this._startRenewingToken()
     }

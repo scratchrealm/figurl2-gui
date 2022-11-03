@@ -1,5 +1,5 @@
 import { isTaskJobStatus, isTaskType, TaskJobStatus, TaskType } from "./MessageToChildTypes"
-import validateObject, { isArrayOf, isEqualTo, isJSONObject, isNull, isOneOf, isString, JSONObject, optional } from "./validateObject"
+import validateObject, { isArrayOf, isBoolean, isEqualTo, isJSONObject, isNull, isOneOf, isString, JSONObject, optional } from "./validateObject"
 
 // getFigureData
 
@@ -197,6 +197,36 @@ export const isStoreFileResponse = (x: any): x is StoreFileResponse => {
     })
 }
 
+// storeGithubFile
+
+export type StoreGithubFileRequest = {
+    type: 'storeGithubFile'
+    fileData: string
+    uri: string
+}
+
+export const isStoreGithubFileRequest = (x: any): x is StoreGithubFileRequest => {
+    return validateObject(x, {
+        type: isEqualTo('storeGithubFile'),
+        fileData: isString,
+        uri: isString
+    })
+}
+
+export type StoreGithubFileResponse = {
+    type: 'storeGithubFile'
+    success: boolean
+    error?: string
+}
+
+export const isStoreGithubFileResponse = (x: any): x is StoreGithubFileResponse => {
+    return validateObject(x, {
+        type: isEqualTo('storeGithubFile'),
+        success: isBoolean,
+        error: optional(isString)
+    })
+}
+
 // setUrlState
 
 export type SetUrlStateRequest = {
@@ -231,6 +261,7 @@ export type FigurlRequest =
     InitiateTaskRequest |
     SubscribeToFeedRequest |
     StoreFileRequest |
+    StoreGithubFileRequest |
     SetUrlStateRequest
 
 export const isFigurlRequest = (x: any): x is FigurlRequest => {
@@ -242,6 +273,7 @@ export const isFigurlRequest = (x: any): x is FigurlRequest => {
         isInitiateTaskRequest,
         isSubscribeToFeedRequest,
         isStoreFileRequest,
+        isStoreGithubFileRequest,
         isSetUrlStateRequest
     ])(x)
 }
@@ -254,6 +286,7 @@ export type FigurlResponse =
     InitiateTaskResponse |
     SubscribeToFeedResponse |
     StoreFileResponse |
+    StoreGithubFileResponse |
     SetUrlStateResponse
 
 export const isFigurlResponse = (x: any): x is FigurlResponse => {
@@ -265,6 +298,7 @@ export const isFigurlResponse = (x: any): x is FigurlResponse => {
         isInitiateTaskResponse,
         isSubscribeToFeedResponse,
         isStoreFileResponse,
+        isStoreGithubFileResponse,
         isSetUrlStateResponse
     ])(x)
 }
