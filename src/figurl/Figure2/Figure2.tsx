@@ -10,7 +10,7 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import FigureInterface, { loadGistDataFromUri, loadGithubFileDataFromUri } from './FigureInterface';
+import FigureInterface, { loadGithubFileDataFromUri } from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
 import getZoneInfo from './getZoneInfo';
 import GithubPermissionsWindow from './GithubPermissionsWindow';
@@ -67,11 +67,9 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
                 const sha1_enc_path = a[2]
                 data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode})
             }
-            else if (dataUri.startsWith('gist://')) {
-                data = await loadGistDataFromUri(dataUri)
-            }
-            else if (dataUri.startsWith('github://')) {
-                data = await loadGithubFileDataFromUri(dataUri)
+            else if (dataUri.startsWith('gh://')) {
+                const {content} = await loadGithubFileDataFromUri(dataUri)
+                data = JSON.parse(content)
             }
             else if ((dataUri.startsWith('zenodo://')) || (dataUri.startsWith('zenodo-sandbox://'))) {
                 const a = dataUri.split('?')[0].split('/')

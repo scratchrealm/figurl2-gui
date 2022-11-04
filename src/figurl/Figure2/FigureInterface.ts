@@ -7,8 +7,8 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
 import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
 import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription'
 import TaskJob from 'kacheryCloudTasks/TaskJob'
+import { Octokit } from 'octokit'
 import { MutableRefObject } from "react"
-import { isLoadGistFileResponse, isLoadGithubFileResponse, isStoreGithubFileResponse, LoadGistFileRequest, LoadGithubFileRequest, StoreGithubFileRequest } from 'types/GithubRequest'
 import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './fileDownload'
 import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import kacheryCloudStoreFile from './kacheryCloudStoreFile'
@@ -230,11 +230,9 @@ class FigureInterface {
             const sha1 = a[2]
             data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode})
         }
-        else if (uri.startsWith('gist://')) {
-            data = await loadGistDataFromUri(uri)
-        }
-        else if (uri.startsWith('github://')) {
-            data = await loadGithubFileDataFromUri(uri)
+        else if (uri.startsWith('gh://')) {
+            const {content} = await loadGithubFileDataFromUri(uri)
+            data = JSON.parse(content)
         }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
@@ -432,7 +430,7 @@ class FigureInterface {
     }
     async handleStoreGithubFileRequest(request: StoreGithubFileRequestFigurl): Promise<StoreGithubFileResponseFigurl> {
         let {fileData, uri} = request
-        if (!uri.startsWith('github://')) {
+        if (!uri.startsWith('gh://')) {
             throw Error(`Invalid github URI: ${uri}`)
         }
         if (!(await this.verifyPermissions('store-github-file', {uri}))) {
@@ -451,7 +449,7 @@ class FigureInterface {
             }
         }
         try {
-            await storeGithubFile({fileData, uri, githubToken})
+            await storeGithubFile({fileData, uri})
         }
         catch(err: any) {
             return {
@@ -524,38 +522,6 @@ export const setJotValue = async (jotId: string, value: string, o: {userId: stri
     return `jot://${jotId}`
 }
 
-export const loadGistDataFromUri = async (uri: string) => {
-    const parseGistUri = (uri: string) => {
-        const a = uri.split('?')[0].split('/')
-        if (a.length !== 5) {
-            throw Error(`Invalid gist uri: ${uri}`)
-        }
-        return {
-            userName: a[2],
-            gistId: a[3],
-            fileName: a[4]
-        }
-    }
-    const loadGistFile = async ({userName, gistId, fileName}: {userName: string, gistId: string, fileName: string}) => {
-        const req: LoadGistFileRequest = {
-            type: 'loadGistFile',
-            userName,
-            gistId,
-            fileName
-        }
-        const r = await axios.post('/api/github', req)
-        const resp = r.data
-        if (!isLoadGistFileResponse(resp)) {
-            console.warn(resp)
-            throw Error('Invalid loadGistFile response')
-        }
-        return resp.content
-    }
-    const {userName, gistId, fileName} = parseGistUri(uri)
-    const contentText = await loadGistFile({userName, gistId, fileName})
-    return JSON.parse(contentText)
-}
-
 const parseGithubFileUri = (uri: string) => {
     const a = uri.split('?')[0].split('/')
     if (a.length < 6) {
@@ -569,48 +535,66 @@ const parseGithubFileUri = (uri: string) => {
     }
 }
 
-export const loadGithubFileDataFromUri = async (uri: string) => {
-    const loadGithubFile = async ({userName, repoName, branchName, fileName}: {userName: string, repoName: string, branchName: string, fileName: string}) => {
-        const req: LoadGithubFileRequest = {
-            type: 'loadGithubFile',
-            userName,
-            repoName,
-            branchName,
-            fileName
-        }
-        const r = await axios.post('/api/github', req)
-        const resp = r.data
-        if (!isLoadGithubFileResponse(resp)) {
-            console.warn(resp)
-            throw Error('Invalid loadGithubFile response')
-        }
-        return resp.content
-    }
+export const loadGithubFileDataFromUri = async (uri: string): Promise<{content: string, sha: string}> => {
+    console.info(`Github: ${uri.slice('gh://'.length)}`)
+
     const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
-    const contentText = await loadGithubFile({userName, repoName, branchName, fileName})
-    return JSON.parse(contentText)
+
+    const githubToken = getGithubTokenFromLocalStorage()
+    const octokit = new Octokit({
+        auth: githubToken
+    })
+    
+    const rr = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
+        owner: userName,
+        repo: repoName,
+        path: fileName,
+        ref: branchName
+    })
+    if (rr.status !== 200) {
+        throw Error(`Problem loading file ${uri}: (${rr.status})`)
+    }
+    const content: string = (rr.data as any).content
+    const buf = Buffer.from(content, 'base64')
+    return {content: buf.toString('utf-8'), sha: (rr.data as any).sha}
 }
 
-const storeGithubFile = async ({fileData, uri, githubToken}: {fileData: string, uri: string, githubToken: string}) => {
+const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string}) => {
     const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
-    const req: StoreGithubFileRequest = {
-        type: 'storeGithubFile',
-        userName,
-        repoName,
-        branchName,
-        fileName,
-        content: fileData,
-        githubToken
+
+    let existingFileData: string | undefined
+    let existingSha: string | undefined
+    try {
+        const aa = await loadGithubFileDataFromUri(uri)
+        existingFileData = aa.content
+        existingSha = aa.sha
     }
-    const r = await axios.post('/api/github', req)
-    const resp = r.data
-    if (!isStoreGithubFileResponse(resp)) {
-        console.warn(resp)
-        throw Error('Invalid loadGithubFile response')
+    catch {
+        existingFileData = undefined
+        existingSha = undefined
     }
-    if (!resp.success) {
-        throw Error(`Error storing github file: ${resp.error}`)
+
+    if (existingFileData) {
+        if (existingFileData === fileData) {
+            // no need to update
+            return
+        }
     }
+
+    const githubToken = getGithubTokenFromLocalStorage()
+    const octokit = new Octokit({
+        auth: githubToken
+    })
+
+    await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
+        owner: userName,
+        repo: repoName,
+        path: fileName,
+        message: `Set ${fileName}`,
+        content: Buffer.from(fileData).toString('base64'),
+        branch: branchName,
+        sha: existingSha
+    })
 }
 
 export const setGithubTokenToLocalStorage = (token: string) => {
