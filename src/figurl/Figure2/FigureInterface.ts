@@ -535,6 +535,69 @@ const parseGithubFileUri = (uri: string) => {
     }
 }
 
+/*
+This is important because there is a lag between when gh refs are changed
+via the gh api and when those changes take effect for content requests.
+A lot more could be said about this... but the upshot is:
+When an individual user saves their work and reloads the page, they will see everything updated properly (even though gh hasn't sync'd yet), because things are loading from local cache.
+But a user on a different browser will experience a delay before seeing the changes. (they will need to refresh the page)
+Subsequent commits for the original user will work, even if gh has not yet synced.
+However, if a second user tries to make a commit without reloading the updated page it will fail.
+*/
+type ILGCRecord = {
+    // records an event where we set the content
+    timestamp: number
+    newSha: string
+    newContent: string
+    oldShas: string[] // important to keep track of these
+}
+type ImportantLocalGithubCache = {
+    [key: string]: ILGCRecord
+}
+const getImportantLocalGithubCache = (): ImportantLocalGithubCache => {
+    try {
+        return JSON.parse(localStorage.getItem('important-local-github-cache-v1') || '{}')
+    }
+    catch(err) {
+        return {}
+    }
+}
+const setImportantLocalGithubCache = (x: ImportantLocalGithubCache) => {
+    localStorage.setItem('important-local-github-cache-v1', JSON.stringify(x))
+}
+const formKey = (user: string, repo: string, branch: string, file: string) => {
+    return `${user}/${repo}/${branch}/${file}`
+}
+const getILGCRecord = (user: string, repo: string, branch: string, file: string): ILGCRecord | undefined => {
+    const cc = getImportantLocalGithubCache()
+    return cc[formKey(user, repo, branch, file)]
+}
+const setILGCRecord = (user: string, repo: string, branch: string, file: string, record: ILGCRecord) => {
+    const cc = getImportantLocalGithubCache()
+    cc[formKey(user, repo, branch, file)] = record
+    setImportantLocalGithubCache(cc)
+}
+const deleteIlgcRecord = (user: string, repo: string, branch: string, file: string) => {
+    const cc = getImportantLocalGithubCache()
+    delete cc[formKey(user, repo, branch, file)]
+    setImportantLocalGithubCache(cc)
+}
+const cleanupILGC = () => {
+    const cc = getImportantLocalGithubCache()
+    const keys = Object.keys(cc)
+    for (let k of keys) {
+        const elapsed = Date.now() - cc[k].timestamp
+        if (elapsed >= 1000 * 60 * 10) {
+            delete cc[k]
+        }
+    }
+    setImportantLocalGithubCache(cc)
+}
+cleanupILGC() // do it once on start
+/////////////////////////////////////////////////////////////////////////////////
+
+
+
 export const loadGithubFileDataFromUri = async (uri: string): Promise<{content: string, sha: string}> => {
     console.info(`Github: ${uri.slice('gh://'.length)}`)
 
@@ -554,9 +617,34 @@ export const loadGithubFileDataFromUri = async (uri: string): Promise<{content: 
     if (rr.status !== 200) {
         throw Error(`Problem loading file ${uri}: (${rr.status})`)
     }
-    const content: string = (rr.data as any).content
-    const buf = Buffer.from(content, 'base64')
-    return {content: buf.toString('utf-8'), sha: (rr.data as any).sha}
+    const content1: string = (rr.data as any).content
+    const buf = Buffer.from(content1, 'base64')
+    const content = buf.toString('utf-8')
+    const sha = (rr.data as any).sha
+
+    try {
+        const ilgcRecord = getILGCRecord(userName, repoName, branchName, fileName)
+        if (ilgcRecord) {
+            if (ilgcRecord.newSha === sha) {
+                // we are good - we have the new content
+                deleteIlgcRecord(userName, repoName, branchName, fileName)
+            }
+            else if ((ilgcRecord.oldShas || []).includes(sha)) {
+                // We most likely have old content (rather than content coming externally). So, let's return the new content.
+                console.info('WARNING: returning locally cached github content', ilgcRecord.newSha)
+                return {
+                    content: ilgcRecord.newContent,
+                    sha: ilgcRecord.newSha
+                }
+            }
+        }
+    }
+    catch(err) {
+        console.warn(err)
+        console.warn('Problem with ILGC')
+    }
+
+    return {content, sha}
 }
 
 const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string}) => {
@@ -565,6 +653,8 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
     let existingFileData: string | undefined
     let existingSha: string | undefined
     try {
+        // note that this will include the cached newest version if relevant
+        // which is important for when we pass in the existingSha below
         const aa = await loadGithubFileDataFromUri(uri)
         existingFileData = aa.content
         existingSha = aa.sha
@@ -586,7 +676,7 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
         auth: githubToken
     })
 
-    await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
+    const r = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
         owner: userName,
         repo: repoName,
         path: fileName,
@@ -595,6 +685,24 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
         branch: branchName,
         sha: existingSha
     })
+    const newSha = (r.data as any).content.sha
+
+    try {
+        if (existingSha) { // only worry about this if we are replacing existing content
+            let ilgcRecord = getILGCRecord(userName, repoName, branchName, fileName)
+            ilgcRecord = {
+                timestamp: Date.now(),
+                newContent: fileData,
+                newSha,
+                oldShas: ilgcRecord ? [...(ilgcRecord.oldShas || []), existingSha] : [existingSha]
+            }
+            setILGCRecord(userName, repoName, branchName, fileName, ilgcRecord)
+        }
+    }
+    catch(err) {
+        console.warn(err)
+        console.warn('Problem with ILGC')
+    }
 }
 
 export const setGithubTokenToLocalStorage = (token: string) => {
