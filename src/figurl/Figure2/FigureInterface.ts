@@ -232,11 +232,24 @@ class FigureInterface {
         }
         else if (uri.startsWith('gh://')) {
             const {content} = await loadGithubFileDataFromUri(uri)
-            if (responseType === 'text') {
-                data = content
+            const {fileName} = parseGithubFileUri(uri)
+            if (fileName.endsWith('.uri')) {
+                if ((content.startsWith('sha1://'))) {
+                    const uri2 = content
+                    const a = uri2.split('?')[0].split('/')
+                    const sha1 = a[2]
+
+                    data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                }
+                else throw Error(`Unexpected content for .uri file ${uri} (expected a URI)`)
             }
             else {
-                data = JSON.parse(content)
+                if (responseType === 'text') {
+                    data = content
+                }
+                else {
+                    data = JSON.parse(content)
+                }
             }
         }
         else if (uri.startsWith('sha1-enc://')) {
@@ -448,27 +461,38 @@ class FigureInterface {
                 error: 'Permission not granted'
             }
         }
-        const githubToken = getGithubTokenFromLocalStorage()
-        if (!githubToken) {
+        async function storeHelper(uri: string, fileData: any): Promise<StoreGithubFileResponseFigurl> {
+            const githubToken = getGithubTokenFromLocalStorage()
+            if (!githubToken) {
+                return {
+                    type: 'storeGithubFile',
+                    success: false,
+                    error: 'No github token'
+                }
+            }
+            try {
+                await storeGithubFile({fileData, uri})
+            }
+            catch(err: any) {
+                return {
+                    type: 'storeGithubFile',
+                    success: false,
+                    error: `Error storing github file: ${err.message}`
+                }
+            }
             return {
                 type: 'storeGithubFile',
-                success: false,
-                error: 'No github token'
+                success: true
             }
         }
-        try {
-            await storeGithubFile({fileData, uri})
+        const {fileName} = parseGithubFileUri(uri)
+        if (fileName.endsWith('.uri')) {
+            // store file in kachery-cloud, get the URI and store that on github (because the file ends with .uri)
+            const {uri: uri2} = await this.handleStoreFileRequest({type: 'storeFile', fileData})
+            return await storeHelper(uri, uri2)
         }
-        catch(err: any) {
-            return {
-                type: 'storeGithubFile',
-                success: false,
-                error: `Error storing github file: ${err.message}`
-            }
-        }
-        return {
-            type: 'storeGithubFile',
-            success: true
+        else {
+            return await storeHelper(uri, fileData)
         }
     }
     async handleSetUrlState(request: SetUrlStateRequest): Promise<SetUrlStateResponse> {
