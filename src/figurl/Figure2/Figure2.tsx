@@ -60,12 +60,12 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, {localMode})
+                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode})
+                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('gh://')) {
                 const {content} = await loadGithubFileDataFromUri(dataUri)

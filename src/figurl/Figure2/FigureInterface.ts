@@ -190,7 +190,7 @@ class FigureInterface {
         this.#onSetUrlStateCallback = callback
     }
     async handleGetFileDataRequest(request: GetFileDataRequest): Promise<GetFileDataResponse> {
-        let {uri} = request
+        let {uri, responseType} = request
         if (!this.#requestedFiles[uri]) {
             this.#requestedFileUris.push(uri)
             this.#requestedFiles[uri] = {}
@@ -217,7 +217,7 @@ class FigureInterface {
             const a = uri.split('?')[0].split('/')
             const sha1 = a[2]
 
-            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode})
+            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
         }
         else if (uri.startsWith('jot://')) {
             const jotId = uri.split('?')[0].split('/')[2]
@@ -228,17 +228,22 @@ class FigureInterface {
             }
             const a = uri0.split('?')[0].split('/')
             const sha1 = a[2]
-            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode})
+            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
         }
         else if (uri.startsWith('gh://')) {
             const {content} = await loadGithubFileDataFromUri(uri)
-            data = JSON.parse(content)
+            if (responseType === 'text') {
+                data = content
+            }
+            else {
+                data = JSON.parse(content)
+            }
         }
         else if (uri.startsWith('sha1-enc://')) {
             const a = uri.split('?')[0].split('/')
             const sha1_enc_path = a[2]
 
-            data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode})
+            data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
         }
         else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
             const a = uri.split('?')[0].split('/')
@@ -250,7 +255,10 @@ class FigureInterface {
             throw Error(`Invalid uri: ${uri}`)
         }
         
-        const dataDeserialized = await deserializeReturnValue(data)
+        let dataDeserialized = data
+        if ((responseType || 'json-deserialized') === 'json-deserialized') {
+            dataDeserialized = await deserializeReturnValue(data)
+        }
         ;(window as any).figurlFileData[uri.toString()] = dataDeserialized
         return {
             type: 'getFileData',

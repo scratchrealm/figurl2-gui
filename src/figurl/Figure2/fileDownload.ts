@@ -158,7 +158,7 @@ const ipfsDownload = async (cid: string) => {
     return y.data
 }
 
-export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean}) => {
+export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean, parseJson: boolean}) => {
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
@@ -204,16 +204,19 @@ export const fileDownload = async (hashAlg: string, hash: string, kacheryGateway
                     }
                     const data = Buffer.concat(chunks)
                     const txt = new TextDecoder().decode(data)
-                    let ret: string
-                    try {
-                        ret = JSON.parse(txt)
+                    if (o.parseJson) {
+                        let ret: string
+                        try {
+                            ret = JSON.parse(txt)
+                        }
+                        catch {
+                            console.warn(txt)
+                            reject('Problem parsing JSON')
+                            return
+                        }
+                        resolve(ret)
                     }
-                    catch {
-                        console.warn(txt)
-                        reject('Problem parsing JSON')
-                        return
-                    }
-                    resolve(ret)
+                    else resolve(txt)
                 })
                 response.on('error', err => {
                     reject(err)
