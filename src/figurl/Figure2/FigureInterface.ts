@@ -206,76 +206,87 @@ class FigureInterface {
                 total
             })
         }
-        if (uri.startsWith('ipfs://')) {
-            if (localMode) throw Error('Cannot download ipfs file in local mode')
-            const a = uri.split('?')[0].split('/')
-            const cid = a[2]
 
-            data = await ipfsDownload(cid)
-        }
-        else if (uri.startsWith('sha1://')) {
-            const a = uri.split('?')[0].split('/')
-            const sha1 = a[2]
+        try {
+            if (uri.startsWith('ipfs://')) {
+                if (localMode) throw Error('Cannot download ipfs file in local mode')
+                const a = uri.split('?')[0].split('/')
+                const cid = a[2]
 
-            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
-        }
-        else if (uri.startsWith('jot://')) {
-            const jotId = uri.split('?')[0].split('/')[2]
-            const uri0 = await getJotValue(jotId)
-            if (!uri0) throw Error(`Unable to find jot: ${jotId}`)
-            if (!uri0.startsWith('sha1://')) {
-                throw Error(`Invalid uri in jot value for ID: ${jotId}`)
+                data = await ipfsDownload(cid)
             }
-            const a = uri0.split('?')[0].split('/')
-            const sha1 = a[2]
-            data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
-        }
-        else if (uri.startsWith('gh://')) {
-            const {content} = await loadGithubFileDataFromUri(uri)
-            const {fileName} = parseGithubFileUri(uri)
-            if (fileName.endsWith('.uri')) {
-                if ((content.startsWith('sha1://'))) {
-                    const uri2 = content
-                    const a = uri2.split('?')[0].split('/')
-                    const sha1 = a[2]
+            else if (uri.startsWith('sha1://')) {
+                const a = uri.split('?')[0].split('/')
+                const sha1 = a[2]
 
-                    data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+            }
+            else if (uri.startsWith('jot://')) {
+                const jotId = uri.split('?')[0].split('/')[2]
+                const uri0 = await getJotValue(jotId)
+                if (!uri0) throw Error(`Unable to find jot: ${jotId}`)
+                if (!uri0.startsWith('sha1://')) {
+                    throw Error(`Invalid uri in jot value for ID: ${jotId}`)
                 }
-                else throw Error(`Unexpected content for .uri file ${uri} (expected a URI)`)
+                const a = uri0.split('?')[0].split('/')
+                const sha1 = a[2]
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
             }
-            else {
-                if (responseType === 'text') {
-                    data = content
+            else if (uri.startsWith('gh://')) {
+                const {content} = await loadGithubFileDataFromUri(uri)
+                const {fileName} = parseGithubFileUri(uri)
+                if (fileName.endsWith('.uri')) {
+                    if ((content.startsWith('sha1://'))) {
+                        const uri2 = content
+                        const a = uri2.split('?')[0].split('/')
+                        const sha1 = a[2]
+
+                        data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                    }
+                    else throw Error(`Unexpected content for .uri file ${uri} (expected a URI)`)
                 }
                 else {
-                    data = JSON.parse(content)
+                    if (responseType === 'text') {
+                        data = content
+                    }
+                    else {
+                        data = JSON.parse(content)
+                    }
                 }
             }
-        }
-        else if (uri.startsWith('sha1-enc://')) {
-            const a = uri.split('?')[0].split('/')
-            const sha1_enc_path = a[2]
+            else if (uri.startsWith('sha1-enc://')) {
+                const a = uri.split('?')[0].split('/')
+                const sha1_enc_path = a[2]
 
-            data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+            }
+            else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
+                const a = uri.split('?')[0].split('/')
+                const recordId = a[2]
+                const fileName = a.slice(3).join('/')
+                data = await zenodoDownload(recordId, fileName, onProgress, {sandbox: uri.startsWith('zenodo-sandbox://')})
+            }
+            else {
+                throw Error(`Invalid uri: ${uri}`)
+            }
+            
+            let dataDeserialized = data
+            if ((responseType || 'json-deserialized') === 'json-deserialized') {
+                dataDeserialized = await deserializeReturnValue(data)
+            }
+            ;(window as any).figurlFileData[uri.toString()] = dataDeserialized
+            return {
+                type: 'getFileData',
+                fileData: dataDeserialized
+            }
         }
-        else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
-            const a = uri.split('?')[0].split('/')
-            const recordId = a[2]
-            const fileName = a.slice(3).join('/')
-            data = await zenodoDownload(recordId, fileName, onProgress, {sandbox: uri.startsWith('zenodo-sandbox://')})
-        }
-        else {
-            throw Error(`Invalid uri: ${uri}`)
-        }
-        
-        let dataDeserialized = data
-        if ((responseType || 'json-deserialized') === 'json-deserialized') {
-            dataDeserialized = await deserializeReturnValue(data)
-        }
-        ;(window as any).figurlFileData[uri.toString()] = dataDeserialized
-        return {
-            type: 'getFileData',
-            fileData: dataDeserialized
+        catch(err: any) {
+            console.warn(err)
+            console.warn(`Error getting file data for ${uri}`)
+            return {
+                type: 'getFileData',
+                errorMessage: err.message
+            }
         }
     }
     async handleGetFileDataUrlRequest(request: GetFileDataUrlRequest): Promise<GetFileDataUrlResponse> {
@@ -284,63 +295,73 @@ class FigureInterface {
             this.#requestedFileUris.push(uri)
             this.#requestedFiles[uri] = {}
         }
-        if (uri.startsWith('ipfs://')) {
-            const a = uri.split('?')[0].split('/')
-            const cid = a[2]
+        try {
+            if (uri.startsWith('ipfs://')) {
+                const a = uri.split('?')[0].split('/')
+                const cid = a[2]
 
-            const url = await ipfsDownloadUrl(cid)
-            if (!url) {
-                throw Error('Unable to get ipfs download url')
+                const url = await ipfsDownloadUrl(cid)
+                if (!url) {
+                    throw Error('Unable to get ipfs download url')
+                }
+                return {
+                    type: 'getFileDataUrl',
+                    fileDataUrl: url
+                }
             }
-            return {
-                type: 'getFileDataUrl',
-                fileDataUrl: url
-            }
-        }
-        else if (uri.startsWith('sha1://')) {
-            const a = uri.split('?')[0].split('/')
-            const sha1 = a[2]
+            else if (uri.startsWith('sha1://')) {
+                const a = uri.split('?')[0].split('/')
+                const sha1 = a[2]
 
-            const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl) || {}
-            if (!url) {
-                throw Error('Unable to get file download url')
+                const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl) || {}
+                if (!url) {
+                    throw Error('Unable to get file download url')
+                }
+                if (size) {
+                    this.#requestedFiles[uri].size = size
+                }
+                return {
+                    type: 'getFileDataUrl',
+                    fileDataUrl: url
+                }
             }
-            if (size) {
-                this.#requestedFiles[uri].size = size
-            }
-            return {
-                type: 'getFileDataUrl',
-                fileDataUrl: url
-            }
-        }
-        else if (uri.startsWith('sha1-enc://')) {
-            const a = uri.split('?')[0].split('/')
-            const sha1_enc_path = a[2]
+            else if (uri.startsWith('sha1-enc://')) {
+                const a = uri.split('?')[0].split('/')
+                const sha1_enc_path = a[2]
 
-            const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl) || {}
-            if (!url) {
-                throw Error('Unable to get file download url')
+                const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl) || {}
+                if (!url) {
+                    throw Error('Unable to get file download url')
+                }
+                if (size) {
+                    this.#requestedFiles[uri].size = size
+                }
+                return {
+                    type: 'getFileDataUrl',
+                    fileDataUrl: url
+                }
             }
-            if (size) {
-                this.#requestedFiles[uri].size = size
+            else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
+                const a = uri.split('?')[0].split('/')
+                const recordId = a[2]
+                const fileName = a.slice(3).join('/')
+                const url = await zenodoDownloadUrl(recordId, fileName, {sandbox: uri.startsWith('zenodo-sandbox://')})
+                return {
+                    type: 'getFileDataUrl',
+                    fileDataUrl: url
+                }
             }
-            return {
-                type: 'getFileDataUrl',
-                fileDataUrl: url
+            else {
+                throw Error(`Invalid uri: ${uri}`)
             }
         }
-        else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
-            const a = uri.split('?')[0].split('/')
-            const recordId = a[2]
-            const fileName = a.slice(3).join('/')
-            const url = await zenodoDownloadUrl(recordId, fileName, {sandbox: uri.startsWith('zenodo-sandbox://')})
+        catch(err: any) {
+            console.warn(err)
+            console.warn(`Error getting file URL for ${uri}`)
             return {
                 type: 'getFileDataUrl',
-                fileDataUrl: url
+                errorMessage: err.message
             }
-        }
-        else {
-            throw Error(`Invalid uri: ${uri}`)
         }
     }
     async handleInitiateTaskRequest(request: InitiateTaskRequest): Promise<InitiateTaskResponse> {
