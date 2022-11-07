@@ -1,8 +1,8 @@
 import { Button } from "@material-ui/core";
+import GithubAccessWindow from "figurl/GithubAccessWindow/GithubAccessWindow";
 import { sleepMsec } from "kacheryCloudTasks/PubsubSubscription";
 import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import FigureInterface, { getGithubTokenFromLocalStorage } from "./FigureInterface";
-import GithubTokenControl from "./GithubTokenControl";
 
 type Props = {
     figureInterface: FigureInterface
@@ -31,6 +31,10 @@ const GithubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
     const [, setReloadTokenCode] = useState<number>(0)
     const reloadToken = useCallback(() => {setReloadTokenCode(c => (c + 1))}, [])
     const githubToken = getGithubTokenFromLocalStorage()
+    const [resetTokenVisible, setResetTokenVisible] = useState(false)
+    useEffect(() => {
+        if (!githubToken) setResetTokenVisible(true)
+    }, [githubToken])
 
     return (
         <div>
@@ -50,9 +54,15 @@ const GithubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
                 )
             }
             <hr />
-            <GithubTokenControl
-                onChange={() => reloadToken()}
-            />
+            {
+                resetTokenVisible ? (
+                    <GithubAccessWindow
+                        onChange={() => reloadToken()}
+                    />
+                ) : (
+                    <Button onClick={() => setResetTokenVisible(true)}>Reset access token</Button>
+                )
+            }
         </div>
     )
 }

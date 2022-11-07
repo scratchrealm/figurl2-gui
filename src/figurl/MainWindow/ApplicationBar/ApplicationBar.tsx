@@ -3,6 +3,8 @@ import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
 import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
 import FigureInterface from 'figurl/Figure2/FigureInterface';
+import GithubAccessControl from 'figurl/GithubAccessWindow/GithubAccessControl';
+import GithubAccessWindow from 'figurl/GithubAccessWindow/GithubAccessWindow';
 import TaskMonitor from 'figurl/TaskMonitor/TaskMonitor';
 import TaskMonitorControl from 'figurl/TaskMonitor/TaskMonitorControl';
 import React, { FunctionComponent, useCallback, useMemo, useState } from 'react';
@@ -40,6 +42,7 @@ export const useModalDialog = () => {
 const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height, figureInterface }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
     const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
+    const {visible: githubAccessWindowVisible, handleOpen: openGithubAccessWindow, handleClose: closeGithubAccessWindow} = useModalDialog()
 
     // const client = useGoogleSignInClient()
     // const gapi = client?.gapi
@@ -88,6 +91,10 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     <TaskMonitorControl onOpen={openTaskMonitor} color="white" />
                     &nbsp;
                 </span>
+                <span style={{paddingBottom: 0, color: 'white'}}>
+                    <GithubAccessControl onOpen={openGithubAccessWindow} />
+                    &nbsp;
+                </span>
                 {
                     routePath === '/f' && (
                         <span style={{paddingBottom: 0, color: 'white'}}>
@@ -132,6 +139,14 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
             >
                 <TaskMonitor
                     onClose={closeTaskMonitor}
+                />
+            </ModalWindow>
+            <ModalWindow
+                open={githubAccessWindowVisible}
+                onClose={closeGithubAccessWindow}
+            >
+                <GithubAccessWindow
+                    onChange={() => {}}
                 />
             </ModalWindow>
         </span>
