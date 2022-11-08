@@ -60,7 +60,7 @@ const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose})
             <h3>This application is requesting to store files in kachery-cloud on your behalf.</h3>
             <p>To allow this, click "Authorize" below.</p>
             <div>
-                <Button onClick={() => {figureInterface.authorizePermission('store-file', {}, true)}}>Authorize this application</Button>
+                <Button style={{color: 'green'}} onClick={() => {figureInterface.authorizePermission('store-file', {}, true)}}>Authorize this application</Button>
                 <Button onClick={() => {figureInterface.authorizePermission('store-file', {}, false)}}>Cancel</Button>
             </div>
             <hr />

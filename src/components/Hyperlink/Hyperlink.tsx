@@ -18,7 +18,7 @@ const Hyperlink: FunctionComponent<Props> = ({ style={}, onClick, href, target, 
         <span className="Hyperlink">
             {
                 href ? (
-                    <a href={href} target={target}>{children}</a>
+                    <a href={href} target={target} style={style}>{children}</a>
                 ) : (
                     <span
                         style={style0}

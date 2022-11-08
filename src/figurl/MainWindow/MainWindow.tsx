@@ -15,7 +15,7 @@ type Props = {
 }
 
 const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePageProps, hide}) => {
-    const {setRoute, label: figureLabel, projectId, backendId} = useRoute2()
+    const {setRoute, label: figureLabel, projectId, backendId, routePath} = useRoute2()
     const {width, height} = useWindowDimensions()
     const [figureInterface, setFigureInterface] = useState<FigureInterface | undefined>()
 
@@ -28,13 +28,16 @@ const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePage
     return (
         <div>
             <KacheryCloudTaskManagerSetup projectId={projectId || ''} backendId={backendId}>
-                <ApplicationBar
-                    title={figureLabel || ''}
-                    onHome={handleHome}
-                    logo={logo}
-                    height={applicationBarHeight}
-                    figureInterface={figureInterface}
-                />
+                {
+                    routePath !== '/github/auth' &&
+                    <ApplicationBar
+                        title={figureLabel || ''}
+                        onHome={handleHome}
+                        logo={logo}
+                        height={applicationBarHeight}
+                        figureInterface={figureInterface}
+                    />
+                }
                 <div>
                     <Routes
                         width={width}

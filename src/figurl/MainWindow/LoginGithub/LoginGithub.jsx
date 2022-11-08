@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 import PopupWindow from './PopupWindow';
 import { toQuery } from './utils';
 
-class LoginGithub extends Component {
+class LoginGitHub extends Component {
   static propTypes = {
     buttonText: PropTypes.string,
     children: PropTypes.node,
@@ -91,4 +91,4 @@ class LoginGithub extends Component {
   }
 }
 
-export default LoginGithub;
+export default LoginGitHub;

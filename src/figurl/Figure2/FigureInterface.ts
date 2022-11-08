@@ -233,8 +233,8 @@ class FigureInterface {
                 data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
             }
             else if (uri.startsWith('gh://')) {
-                const {content} = await loadGithubFileDataFromUri(uri)
-                const {fileName} = parseGithubFileUri(uri)
+                const {content} = await loadGitHubFileDataFromUri(uri)
+                const {fileName} = parseGitHubFileUri(uri)
                 if (fileName.endsWith('.uri')) {
                     if ((content.startsWith('sha1://'))) {
                         const uri2 = content
@@ -483,7 +483,7 @@ class FigureInterface {
             }
         }
         async function storeHelper(uri: string, fileData: any): Promise<StoreGithubFileResponseFigurl> {
-            const githubToken = getGithubTokenFromLocalStorage()
+            const githubToken = getGitHubTokenFromLocalStorage()
             if (!githubToken) {
                 return {
                     type: 'storeGithubFile',
@@ -506,7 +506,7 @@ class FigureInterface {
                 success: true
             }
         }
-        const {fileName} = parseGithubFileUri(uri)
+        const {fileName} = parseGitHubFileUri(uri)
         if (fileName.endsWith('.uri')) {
             // store file in kachery-cloud, get the URI and store that on github (because the file ends with .uri)
             const {uri: uri2} = await this.handleStoreFileRequest({type: 'storeFile', fileData})
@@ -575,7 +575,7 @@ export const setJotValue = async (jotId: string, value: string, o: {userId: stri
     return `jot://${jotId}`
 }
 
-const parseGithubFileUri = (uri: string) => {
+const parseGitHubFileUri = (uri: string) => {
     const a = uri.split('?')[0].split('/')
     if (a.length < 6) {
         throw Error(`Invalid github file uri: ${uri}`)
@@ -604,10 +604,10 @@ type ILGCRecord = {
     newContent: string
     oldShas: string[] // important to keep track of these
 }
-type ImportantLocalGithubCache = {
+type ImportantLocalGitHubCache = {
     [key: string]: ILGCRecord
 }
-const getImportantLocalGithubCache = (): ImportantLocalGithubCache => {
+const getImportantLocalGitHubCache = (): ImportantLocalGitHubCache => {
     try {
         return JSON.parse(localStorage.getItem('important-local-github-cache-v1') || '{}')
     }
@@ -615,28 +615,28 @@ const getImportantLocalGithubCache = (): ImportantLocalGithubCache => {
         return {}
     }
 }
-const setImportantLocalGithubCache = (x: ImportantLocalGithubCache) => {
+const setImportantLocalGitHubCache = (x: ImportantLocalGitHubCache) => {
     localStorage.setItem('important-local-github-cache-v1', JSON.stringify(x))
 }
 const formKey = (user: string, repo: string, branch: string, file: string) => {
     return `${user}/${repo}/${branch}/${file}`
 }
 const getILGCRecord = (user: string, repo: string, branch: string, file: string): ILGCRecord | undefined => {
-    const cc = getImportantLocalGithubCache()
+    const cc = getImportantLocalGitHubCache()
     return cc[formKey(user, repo, branch, file)]
 }
 const setILGCRecord = (user: string, repo: string, branch: string, file: string, record: ILGCRecord) => {
-    const cc = getImportantLocalGithubCache()
+    const cc = getImportantLocalGitHubCache()
     cc[formKey(user, repo, branch, file)] = record
-    setImportantLocalGithubCache(cc)
+    setImportantLocalGitHubCache(cc)
 }
 const deleteIlgcRecord = (user: string, repo: string, branch: string, file: string) => {
-    const cc = getImportantLocalGithubCache()
+    const cc = getImportantLocalGitHubCache()
     delete cc[formKey(user, repo, branch, file)]
-    setImportantLocalGithubCache(cc)
+    setImportantLocalGitHubCache(cc)
 }
 const cleanupILGC = () => {
-    const cc = getImportantLocalGithubCache()
+    const cc = getImportantLocalGitHubCache()
     const keys = Object.keys(cc)
     for (let k of keys) {
         const elapsed = Date.now() - cc[k].timestamp
@@ -644,19 +644,19 @@ const cleanupILGC = () => {
             delete cc[k]
         }
     }
-    setImportantLocalGithubCache(cc)
+    setImportantLocalGitHubCache(cc)
 }
 cleanupILGC() // do it once on start
 /////////////////////////////////////////////////////////////////////////////////
 
 
 
-export const loadGithubFileDataFromUri = async (uri: string): Promise<{content: string, sha: string}> => {
-    console.info(`Github: ${uri.slice('gh://'.length)}`)
+export const loadGitHubFileDataFromUri = async (uri: string): Promise<{content: string, sha: string}> => {
+    console.info(`GitHub: ${uri.slice('gh://'.length)}`)
 
-    const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
+    const {userName, repoName, branchName, fileName} = parseGitHubFileUri(uri)
 
-    const githubToken = getGithubTokenFromLocalStorage()
+    const githubToken = getGitHubTokenFromLocalStorage()
     const octokit = new Octokit({
         auth: githubToken
     })
@@ -701,14 +701,14 @@ export const loadGithubFileDataFromUri = async (uri: string): Promise<{content: 
 }
 
 const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string}) => {
-    const {userName, repoName, branchName, fileName} = parseGithubFileUri(uri)
+    const {userName, repoName, branchName, fileName} = parseGitHubFileUri(uri)
 
     let existingFileData: string | undefined
     let existingSha: string | undefined
     try {
         // note that this will include the cached newest version if relevant
         // which is important for when we pass in the existingSha below
-        const aa = await loadGithubFileDataFromUri(uri)
+        const aa = await loadGitHubFileDataFromUri(uri)
         existingFileData = aa.content
         existingSha = aa.sha
     }
@@ -724,7 +724,7 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
         }
     }
 
-    const githubToken = getGithubTokenFromLocalStorage()
+    const githubToken = getGitHubTokenFromLocalStorage()
     const octokit = new Octokit({
         auth: githubToken
     })
@@ -758,18 +758,31 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
     }
 }
 
-export const setGithubTokenToLocalStorage = (token: string) => {
+export const setGitHubTokenToLocalStorage = (token: string, user?: string) => {
     localStorage.setItem('githubToken', JSON.stringify({
-        token
+        token,
+        user
     }))
 }
 
-export const getGithubTokenFromLocalStorage = () => {
+export const getGitHubTokenFromLocalStorage = () => {
     const a = localStorage.getItem('githubToken')
     if (!a) return undefined
     try {
         const b = JSON.parse(a)
         return b.token
+    }
+    catch {
+        return undefined
+    }
+}
+
+export const getGitHubUserFromLocalStorage = () => {
+    const a = localStorage.getItem('githubToken')
+    if (!a) return undefined
+    try {
+        const b = JSON.parse(a)
+        return b.user
     }
     catch {
         return undefined

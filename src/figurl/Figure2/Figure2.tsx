@@ -10,10 +10,10 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import FigureInterface, { loadGithubFileDataFromUri } from './FigureInterface';
+import FigureInterface, { loadGitHubFileDataFromUri } from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
 import getZoneInfo from './getZoneInfo';
-import GithubPermissionsWindow from './GithubPermissionsWindow';
+import GitHubPermissionsWindow from './GitHubPermissionsWindow';
 import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
@@ -68,7 +68,7 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
                 data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('gh://')) {
-                const {content} = await loadGithubFileDataFromUri(dataUri)
+                const {content} = await loadGitHubFileDataFromUri(dataUri)
                 data = JSON.parse(content)
             }
             else if ((dataUri.startsWith('zenodo://')) || (dataUri.startsWith('zenodo-sandbox://'))) {
@@ -140,7 +140,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const taskManager = useKacheryCloudTaskManager()
     const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
-    const {visible: githubPermissionsWindowVisible, handleOpen: openGithubPermissionsWindow, handleClose: closeGithubPermissionsWindow} = useModalDialog()
+    const {visible: githubPermissionsWindowVisible, handleOpen: openGitHubPermissionsWindow, handleClose: closeGitHubPermissionsWindow} = useModalDialog()
     const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
     const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl)
     const [permissionsParams, setPermissionsParams] = useState<any>()
@@ -213,11 +213,11 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             }
             else if (purpose === 'store-github-file') {
                 setPermissionsParams(params)
-                openGithubPermissionsWindow()
+                openGitHubPermissionsWindow()
             }
         })
         figureInterface.onSetUrlState(handleSetUrlState)
-    }, [figureInterface, openPermissionsWindow, openGithubPermissionsWindow, handleSetUrlState])
+    }, [figureInterface, openPermissionsWindow, openGitHubPermissionsWindow, handleSetUrlState])
 
     const parentOrigin = window.location.protocol + '//' + window.location.host
     let src = useMemo(() => {
@@ -263,8 +263,8 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
                 open={githubPermissionsWindowVisible}
                 onClose={undefined}
             >
-                <GithubPermissionsWindow
-                    onClose={closeGithubPermissionsWindow}
+                <GitHubPermissionsWindow
+                    onClose={closeGitHubPermissionsWindow}
                     figureInterface={figureInterface}
                     params={permissionsParams}
                 />

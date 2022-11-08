@@ -3,11 +3,11 @@ import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
 import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
 import FigureInterface from 'figurl/Figure2/FigureInterface';
-import GithubAccessControl from 'figurl/GithubAccessWindow/GithubAccessControl';
-import GithubAccessWindow from 'figurl/GithubAccessWindow/GithubAccessWindow';
+import GitHubAccessControl from 'figurl/GitHubAccessWindow/GitHubAccessControl';
 import TaskMonitor from 'figurl/TaskMonitor/TaskMonitor';
 import TaskMonitorControl from 'figurl/TaskMonitor/TaskMonitorControl';
-import React, { FunctionComponent, useCallback, useMemo, useState } from 'react';
+import { FunctionComponent, useCallback, useMemo, useState } from 'react';
+import GitHubLoginWindow from '../GitHub/GitHubLoginWindow';
 import SaveFigureControl from './SaveFigureControl';
 import SaveFigureDialog from './SaveFigureDialog';
 
@@ -42,7 +42,7 @@ export const useModalDialog = () => {
 const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height, figureInterface }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
     const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
-    const {visible: githubAccessWindowVisible, handleOpen: openGithubAccessWindow, handleClose: closeGithubAccessWindow} = useModalDialog()
+    const {visible: githubAccessWindowVisible, handleOpen: openGitHubAccessWindow, handleClose: closeGitHubAccessWindow} = useModalDialog()
 
     // const client = useGoogleSignInClient()
     // const gapi = client?.gapi
@@ -92,7 +92,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     &nbsp;
                 </span>
                 <span style={{paddingBottom: 0, color: 'white'}}>
-                    <GithubAccessControl onOpen={openGithubAccessWindow} />
+                    <GitHubAccessControl onOpen={openGitHubAccessWindow} />
                     &nbsp;
                 </span>
                 {
@@ -109,7 +109,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                         <Button color="inherit" onClick={handleLogin}>Sign in</Button>
                     )
                 }
-                {/* <LoginGithub -- at some point in the future we can login via github - see ../LoginGithub folder
+                {/* <LoginGitHub -- at some point in the future we can login via github - see ../LoginGitHub folder
                     clientId="..."
                     onSuccess={handleLoginSuccess}
                     onFailure={handleLoginFailure}
@@ -143,11 +143,12 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
             </ModalWindow>
             <ModalWindow
                 open={githubAccessWindowVisible}
-                onClose={closeGithubAccessWindow}
+                onClose={closeGitHubAccessWindow}
             >
-                <GithubAccessWindow
+                {/* <GitHubAccessWindow
                     onChange={() => {}}
-                />
+                /> */}
+                <GitHubLoginWindow onClose={() => closeGitHubAccessWindow()} onChange={() => {}} />
             </ModalWindow>
         </span>
     )

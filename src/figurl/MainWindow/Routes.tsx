@@ -3,6 +3,7 @@ import FigureInterface from 'figurl/Figure2/FigureInterface'
 import { useLocalMode } from 'figurl/FigurlSetup'
 import React, { FunctionComponent } from 'react'
 import HomePage, { HomePageProps } from '../HomePage/HomePage'
+import GitHubAuthPage from './GitHub/GitHubAuthPage'
 import VerifyLocalKacheryDir from './VerifyLocalKacheryDir'
 
 type Props = {
@@ -35,6 +36,10 @@ const Routes: FunctionComponent<Props> = ({width, height, homePageProps, setFigu
                 </VerifyLocalKacheryDir>
             ) : figure2
         )
+    }
+    else if (routePath === '/github/auth') {
+        document.title = 'figurl github auth'
+        return <GitHubAuthPage />
     }
     else {
         document.title = 'figurl'
