@@ -1,5 +1,5 @@
 import axios, { AxiosResponse } from 'axios'
-import { JSONStringifyDeterministic, UserId } from 'commonInterface/kacheryTypes'
+import { isString, JSONStringifyDeterministic, UserId } from 'commonInterface/kacheryTypes'
 import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
@@ -15,6 +15,7 @@ import kacheryCloudStoreFile from './kacheryCloudStoreFile'
 import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, StoreGithubFileRequest as StoreGithubFileRequestFigurl, StoreGithubFileResponse as StoreGithubFileResponseFigurl, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
 import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
+import validateObject, { isBoolean, isNumber, optional } from './viewInterface/validateObject'
 import zenodoDownload, { zenodoDownloadUrl } from './zenodoDownload'
 (window as any).figurlFileData = {}
 
@@ -483,8 +484,8 @@ class FigureInterface {
             }
         }
         async function storeHelper(uri: string, fileData: any): Promise<StoreGithubFileResponseFigurl> {
-            const githubToken = getGitHubTokenFromLocalStorage()
-            if (!githubToken) {
+            const githubTokenInfo = getGitHubTokenInfoFromLocalStorage()
+            if (!githubTokenInfo?.token) {
                 return {
                     type: 'storeGithubFile',
                     success: false,
@@ -656,9 +657,9 @@ export const loadGitHubFileDataFromUri = async (uri: string): Promise<{content: 
 
     const {userName, repoName, branchName, fileName} = parseGitHubFileUri(uri)
 
-    const githubToken = getGitHubTokenFromLocalStorage()
+    const githubInfoToken = getGitHubTokenInfoFromLocalStorage()
     const octokit = new Octokit({
-        auth: githubToken
+        auth: githubInfoToken?.token
     })
     
     const rr = await octokit.request('GET /repos/{owner}/{repo}/contents/{path}', {
@@ -724,9 +725,9 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
         }
     }
 
-    const githubToken = getGitHubTokenFromLocalStorage()
+    const githubTokenInfo = getGitHubTokenInfoFromLocalStorage()
     const octokit = new Octokit({
-        auth: githubToken
+        auth: githubTokenInfo?.token
     })
 
     const r = await octokit.request('PUT /repos/{owner}/{repo}/contents/{path}', {
@@ -758,33 +759,44 @@ const storeGithubFile = async ({fileData, uri}: {fileData: string, uri: string})
     }
 }
 
-export const setGitHubTokenToLocalStorage = (token: string, user?: string) => {
-    localStorage.setItem('githubToken', JSON.stringify({
-        token,
-        user
-    }))
+export type GitHubTokenInfo = {
+    token?: string
+    userId?: string
+    userIdTimestamp?: number
+    isPersonalAccessToken?: boolean
 }
 
-export const getGitHubTokenFromLocalStorage = () => {
+export const isGithubTokenInfo = (x: any): x is GitHubTokenInfo => {
+    return validateObject(x, {
+        token: optional(isString),
+        userId: optional(isString),
+        userIdTimestamp: optional(isNumber),
+        isPersonalAccessToken: optional(isBoolean)
+    })
+}
+
+export const setGitHubTokenInfoToLocalStorage = (tokenInfo: GitHubTokenInfo) => {
+    localStorage.setItem('githubToken', JSON.stringify(tokenInfo))
+}
+
+export const getGitHubTokenInfoFromLocalStorage = (): GitHubTokenInfo | undefined => {
     const a = localStorage.getItem('githubToken')
     if (!a) return undefined
     try {
         const b = JSON.parse(a)
-        return b.token
+        if (isGithubTokenInfo(b)) {
+            return b
+        }
+        else {
+            console.warn(b)
+            console.warn('Invalid GitHub token info.')
+            localStorage.removeItem('githubToken')
+            return undefined
+        }
     }
     catch {
-        return undefined
-    }
-}
-
-export const getGitHubUserFromLocalStorage = () => {
-    const a = localStorage.getItem('githubToken')
-    if (!a) return undefined
-    try {
-        const b = JSON.parse(a)
-        return b.user
-    }
-    catch {
+        console.warn(a)
+        console.warn('Error with github token info.')
         return undefined
     }
 }

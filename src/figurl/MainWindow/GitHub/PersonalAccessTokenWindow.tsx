@@ -1,5 +1,5 @@
 import { Button, Input } from "@material-ui/core";
-import { getGitHubTokenFromLocalStorage, setGitHubTokenToLocalStorage } from "figurl/Figure2/FigureInterface";
+import { getGitHubTokenInfoFromLocalStorage, setGitHubTokenInfoToLocalStorage } from "figurl/Figure2/FigureInterface";
 import { FunctionComponent, useCallback, useState } from "react";
 
 type Props ={
@@ -12,12 +12,12 @@ const PersonalAccessTokenWindow: FunctionComponent<Props> = ({onChange}) => {
         setNewToken(e.target.value as string)
 	}, [])
 	const handleSubmit = useCallback(() => {
-		setGitHubTokenToLocalStorage(newToken)
+		setGitHubTokenInfoToLocalStorage({token: newToken, isPersonalAccessToken: true})
 		setNewToken('')
 		onChange()
 	}, [newToken, onChange])
 
-	const oldToken = getGitHubTokenFromLocalStorage()
+	const oldTokenInfo = getGitHubTokenInfoFromLocalStorage()
 
 	return (
 		<div>
@@ -38,13 +38,13 @@ const PersonalAccessTokenWindow: FunctionComponent<Props> = ({onChange}) => {
 				)
 			}
 			{
-				oldToken ? (
+				oldTokenInfo?.token ? (
 					<span>
-						<p style={{color: 'green'}}>GitHub personal access token has been set.</p>
+						<p style={{color: 'green'}}>GitHub access token has been set.</p>
 					</span>
 				) : (
 					<span>
-						<p style={{color: 'red'}}>GitHub personal access token not set.</p>
+						<p style={{color: 'red'}}>GitHub access token not set.</p>
 					</span>
 				)
 			}

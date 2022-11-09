@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Button } from "@material-ui/core";
 import axios from "axios";
 import Hyperlink from "components/Hyperlink/Hyperlink";
-import { getGitHubTokenFromLocalStorage, getGitHubUserFromLocalStorage, setGitHubTokenToLocalStorage } from "figurl/Figure2/FigureInterface";
+import { getGitHubTokenInfoFromLocalStorage, setGitHubTokenInfoToLocalStorage } from "figurl/Figure2/FigureInterface";
 import { FunctionComponent, useCallback, useEffect, useState } from "react";
 import PersonalAccessTokenWindow from "./PersonalAccessTokenWindow";
 
@@ -25,11 +25,11 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 	useEffect(() => {
 		// polling
 		const intervalId = setInterval(() => {
-			const token = getGitHubTokenFromLocalStorage()
-			if (token) {
+			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
+			if (tokenInfo?.token) {
 				setLoginStatus({
 					status: 'logged-in',
-					accessToken: token
+					accessToken: tokenInfo.token
 				})
 			}
 			else {
@@ -44,22 +44,29 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 	}, [])
 	useEffect(() => {
 		if (loginStatus.accessToken) {
-			const u = getGitHubUserFromLocalStorage()
-			if (u) {
+			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
+			const u = tokenInfo?.userId
+			const elapsed = Date.now() - (tokenInfo?.userIdTimestamp || 0)
+			if ((u) && (elapsed < 1000 * 60 * 10)) {
 				setUserName(u)
 			}
 			else {
 				axios.get(`https://api.github.com/user`, {headers: {Authorization: `token ${loginStatus.accessToken}`}}).then(resp => {
-					setGitHubTokenToLocalStorage(getGitHubTokenFromLocalStorage(), resp.data.login)
+					setGitHubTokenInfoToLocalStorage({
+						...tokenInfo,
+						userId: resp.data.login,
+						userIdTimestamp: Date.now()
+					})
 					setUserName(resp.data.login)
 				})
 			}
 		}
 	}, [loginStatus.accessToken])
 	const handleClearAccessToken = useCallback(() => {
-		setGitHubTokenToLocalStorage('')
+		setGitHubTokenInfoToLocalStorage({})
 		onChange()
 	}, [onChange])
+	const githubTokenInfo = getGitHubTokenInfoFromLocalStorage()
 	if (!GITHUB_CLIENT_ID) {
 		return <div>Environment variable not set: REACT_APP_GITHUB_CLIENT_ID</div>
 	}
@@ -96,9 +103,17 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 					<Button onClick={handleClearAccessToken}>Clear access token</Button>
 				</div>
 				<br />
-				<div style={{paddingLeft: 6, fontSize: 12}}>
-					<Hyperlink href="https://github.com/settings/applications" target="_blank" style={{color: 'gray'}}>Revoke or manage access</Hyperlink>
-				</div>
+				{
+					githubTokenInfo?.isPersonalAccessToken ? (
+						<div style={{paddingLeft: 6, fontSize: 12}}>
+							<Hyperlink href="https://github.com/settings/apps" target="_blank" style={{color: 'gray'}}>Revoke or manage personal access token</Hyperlink>
+						</div>
+					) : (
+						<div style={{paddingLeft: 6, fontSize: 12}}>
+							<Hyperlink href="https://github.com/settings/applications" target="_blank" style={{color: 'gray'}}>Revoke or manage access</Hyperlink>
+						</div>
+					)
+				}
 			</div>
 		)
 	}

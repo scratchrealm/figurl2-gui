@@ -1,5 +1,5 @@
 import axios from "axios";
-import { setGitHubTokenToLocalStorage } from "figurl/Figure2/FigureInterface";
+import { setGitHubTokenInfoToLocalStorage } from "figurl/Figure2/FigureInterface";
 import { FunctionComponent, useEffect, useState } from "react";
 
 type Props ={
@@ -18,7 +18,10 @@ const GitHubAuthPage: FunctionComponent<Props> = () => {
 				setError(r.error)
 				return
 			}
-			setGitHubTokenToLocalStorage(r.access_token)
+			setGitHubTokenInfoToLocalStorage({
+				token: r.access_token,
+				isPersonalAccessToken: false
+			})
 			setStatus('okay')
 		})()
 	}, [code])

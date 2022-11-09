@@ -2,7 +2,7 @@ import { Button } from "@material-ui/core";
 import { sleepMsec } from "kacheryCloudTasks/PubsubSubscription";
 import { FunctionComponent, useEffect, useState } from "react";
 import GitHubLoginWindow, { GithubLoginStatus } from '../MainWindow/GitHub/GitHubLoginWindow';
-import FigureInterface, { getGitHubTokenFromLocalStorage } from "./FigureInterface";
+import FigureInterface, { getGitHubTokenInfoFromLocalStorage } from "./FigureInterface";
 
 type Props = {
     figureInterface: FigureInterface
@@ -32,11 +32,11 @@ const GitHubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
     useEffect(() => {
 		// polling
 		const intervalId = setInterval(() => {
-			const token = getGitHubTokenFromLocalStorage()
-			if (token) {
+			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
+			if (tokenInfo?.token) {
 				setLoginStatus({
 					status: 'logged-in',
-					accessToken: token
+					accessToken: tokenInfo.token
 				})
 			}
 			else {
