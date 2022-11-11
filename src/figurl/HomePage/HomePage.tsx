@@ -9,10 +9,9 @@ export type HomePageProps = {
     packageName: string
     pythonProjectVersion: string
     webAppProjectVersion: string
-    repoUrl: string
 }
 
-const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectVersion, webAppProjectVersion, repoUrl}) => {
+const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectVersion, webAppProjectVersion}) => {
     const {signedIn} = useSignedIn()
 
     return (

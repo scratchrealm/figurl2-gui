@@ -231,6 +231,14 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     }, [figureInterface, parentOrigin, viewUrl]) // intentionally exclude query.s from dependencies so we don't get a refresh when state changes
 
     if (!figureData) {
+        if (!figureDataUri) {
+            if (viewUrl === 'gs') {
+                return <div style={{padding: 20}}>The URL appears to have been truncated. This can happen on some phones when scanning a QR code. The solution is to copy the URL to the clipboard and then paste it into the browser address bar.</div>
+            }
+            else {
+                return <div style={{padding: 20}}>No data "d" query parameter specified for this figure.</div>
+            }
+        }
         return (
             <ProgressComponent
                 loaded={progressValue?.loaded}

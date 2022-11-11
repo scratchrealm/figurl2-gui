@@ -26,7 +26,6 @@
     "original-fs": "^1.1.0",
     "pubnub": "^7.2.0",
     "react": "^17.0.2",
-    "react-device-detect": "^2.2.2",
     "react-dom": "^17.0.2",
     "react-google-button": "^0.7.2",
     "react-markdown": "^4.3.1",

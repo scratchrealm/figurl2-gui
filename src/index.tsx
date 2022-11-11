@@ -5,7 +5,6 @@ import logo from './logo.png';
 import packageName from './packageName';
 import reportWebVitals from './reportWebVitals';
 import { pythonProjectVersion, webAppProjectVersion } from './version';
-import {isMobile} from 'react-device-detect';
 
 // async function test1() {
 //   const resp = await axios.get(`http://localhost:20431/probe`, {responseType: 'text'})
@@ -28,36 +27,22 @@ const hide = parseInt(hideStr)
 const localStr = getQueryVariable('local') || '0'
 const local = parseInt(localStr)
 
-
-if ((isMobile) && (window.location.pathname !== '/') && (window.location.pathname !== '/home')) {
-  ReactDOM.render(
-    (
-      <span>
-        This website cannot be viewed on a mobile device. Please open this link on a computer or enable the "Desktop" mode in your browser.
-      </span>
-    ),
-    document.getElementById('root')
-  )
-}
-else {
-  ReactDOM.render(
-    // disable strict mode to supress: "findDOMNode is deprecated in StrictMode" warnings
-    (
-    // <React.StrictMode>
-      <FigurlApp
-        packageName={packageName}
-        pythonProjectVersion={pythonProjectVersion}
-        webAppProjectVersion={webAppProjectVersion}
-        repoUrl={"https://github.com/scratchrealm/figurl2"}
-        logo={logo}
-        hide={hide}
-        localMode={local ? true : false}
-      />
-      // </React.StrictMode>
-    ),
-    document.getElementById('root')
-  )
-}
+ReactDOM.render(
+  // disable strict mode to supress: "findDOMNode is deprecated in StrictMode" warnings
+  (
+  // <React.StrictMode>
+    <FigurlApp
+      packageName={packageName}
+      pythonProjectVersion={pythonProjectVersion}
+      webAppProjectVersion={webAppProjectVersion}
+      logo={logo}
+      hide={hide}
+      localMode={local ? true : false}
+    />
+    // </React.StrictMode>
+  ),
+  document.getElementById('root')
+)
 
 function getQueryVariable(variable: string) {
   var query = window.location.search.substring(1)
