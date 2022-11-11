@@ -108,7 +108,7 @@ export const useRoute2 = () => {
     const figureDataUri = query.d ? query.d as string : undefined
     const projectId = query.project ? query.project as string : undefined
     const backendId = query.backend ? query.backend as string : undefined
-    const label = query.label ? query.label as any as string : 'untitled'
+    const label = query.label ? query.label as any as string : ''
     const zone: string | undefined = query.zone ? query.zone as any as string : undefined
 
     const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, projectId?: string, label?: string}) => {

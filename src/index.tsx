@@ -29,7 +29,7 @@ const localStr = getQueryVariable('local') || '0'
 const local = parseInt(localStr)
 
 
-if (isMobile) {
+if ((isMobile) && (window.location.pathname !== '/') && (window.location.pathname !== '/home')) {
   ReactDOM.render(
     (
       <span>

@@ -4,8 +4,6 @@ import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
 import FigureInterface from 'figurl/Figure2/FigureInterface';
 import GitHubAccessControl from 'figurl/GitHubAccessWindow/GitHubAccessControl';
-import TaskMonitor from 'figurl/TaskMonitor/TaskMonitor';
-import TaskMonitorControl from 'figurl/TaskMonitor/TaskMonitorControl';
 import { FunctionComponent, useCallback, useMemo, useState } from 'react';
 import GitHubLoginWindow from '../GitHub/GitHubLoginWindow';
 import SaveFigureControl from './SaveFigureControl';
@@ -41,7 +39,7 @@ export const useModalDialog = () => {
 
 const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height, figureInterface }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
-    const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
+    // const {visible: taskMonitorVisible, handleOpen: openTaskMonitor, handleClose: closeTaskMonitor} = useModalDialog()
     const {visible: githubAccessWindowVisible, handleOpen: openGitHubAccessWindow, handleClose: closeGitHubAccessWindow} = useModalDialog()
 
     // const client = useGoogleSignInClient()
@@ -87,10 +85,10 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                 {/* <span style={{paddingBottom: 0, color: 'white'}}>
                     <ProjectControl onOpen={openConfigureProject} color={projectControlColor} />
                 </span> */}
-                <span style={{paddingBottom: 0, color: 'white'}}>
+                {/* <span style={{paddingBottom: 0, color: 'white'}}>
                     <TaskMonitorControl onOpen={openTaskMonitor} color="white" />
                     &nbsp;
-                </span>
+                </span> */}
                 <span style={{paddingBottom: 0, color: 'white'}}>
                     <GitHubAccessControl onOpen={openGitHubAccessWindow} />
                     &nbsp;
@@ -133,14 +131,14 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     onClose={closeConfigureChannel}
                 />
             </ModalWindow> */}
-            <ModalWindow
+            {/* <ModalWindow
                 open={taskMonitorVisible}
                 onClose={closeTaskMonitor}
             >
                 <TaskMonitor
                     onClose={closeTaskMonitor}
                 />
-            </ModalWindow>
+            </ModalWindow> */}
             <ModalWindow
                 open={githubAccessWindowVisible}
                 onClose={closeGitHubAccessWindow}

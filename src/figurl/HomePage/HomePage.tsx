@@ -1,5 +1,5 @@
 import { useSignedIn } from 'components/googleSignIn/GoogleSignIn'
-import React, { FunctionComponent } from 'react'
+import { FunctionComponent } from 'react'
 import './Home.css'
 import IntroSection from './IntroSection'
 import './localStyles.css'
@@ -17,9 +17,8 @@ const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectV
 
     return (
         <div style={{margin: 'auto', maxWidth: 1200, paddingLeft: 10, paddingRight: 10}}>
-            
             <IntroSection />
-
+            
             {
                 signedIn ? (
                     <SavedFiguresTable />
