@@ -1,7 +1,8 @@
 import { MuiThemeProvider } from '@material-ui/core';
 import { testSignatures } from 'commonInterface/crypto/signatures';
 import GoogleSignInSetup from 'components/googleSignIn/GoogleSignInSetup';
-import React, { FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
+import Hyperlink from 'components/Hyperlink/Hyperlink';
+import { FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
 import { BrowserRouter } from 'react-router-dom';
 import './App.css';
 import FigurlSetup from './FigurlSetup';
@@ -49,7 +50,8 @@ const FigurlApp: FunctionComponent<Props> = ({
     packageName, pythonProjectVersion, webAppProjectVersion
   }), [packageName, pythonProjectVersion, webAppProjectVersion])
   const {isMobile} = useIsMobile()
-  if ((isMobile) && (window.location.pathname !== '/') && (window.location.pathname !== '/home')) {
+  const [viewAnyway, setViewAnyway] = useState(false)
+  if ((!viewAnyway) && (isMobile) && (window.location.pathname !== '/') && (window.location.pathname !== '/home')) {
     /*
     I tried using react-device-detect to do this, but it didn't work for safari and chrome on iphone,
     so it's better to do it using screen size. It seems the smallest tablet is 768 pixels.
@@ -57,11 +59,14 @@ const FigurlApp: FunctionComponent<Props> = ({
     return (
       <div style={{padding: 20}}>
         <p>
-          This website cannot be viewed in mobile device mode. Please open this link on a computer or enable the "Desktop" mode in your browser.
+          This website is not designed to be viewed in mobile device mode. Please open this link on a computer or enable the "Desktop" mode in your browser.
           If the page still does not load, try using your device in landscape orientation.
         </p>
         <p>
           There are known issues with Firefox on mobile, so we recommend either Chrome or Safari.
+        </p>
+        <p>
+          <Hyperlink onClick={() => setViewAnyway(true)}>view page anyway</Hyperlink>
         </p>
         <p>
           <a href="https://figurl.org">Figurl home</a>
