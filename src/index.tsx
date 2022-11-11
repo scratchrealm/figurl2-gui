@@ -33,7 +33,7 @@ if (isMobile) {
   ReactDOM.render(
     (
       <span>
-        This website cannot be viewed on a mobile device. Please open this link on a computer.
+        This website cannot be viewed on a mobile device. Please open this link on a computer or enable the "Desktop" mode in your browser.
       </span>
     ),
     document.getElementById('root')
