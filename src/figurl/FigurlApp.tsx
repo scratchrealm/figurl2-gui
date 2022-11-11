@@ -35,7 +35,7 @@ const useIsMobile = () => {
       effectiveWidth.current = width
     }
     if (effectiveWidth.current) {
-      setIsMobile(effectiveWidth.current < 768)
+      setIsMobile(effectiveWidth.current <= 600)
     }
   }, [width])
   return {isMobile}
@@ -44,6 +44,7 @@ const useIsMobile = () => {
 const FigurlApp: FunctionComponent<Props> = ({
   packageName, pythonProjectVersion, webAppProjectVersion, logo, hide, localMode
 }) => {
+  const {width, height} = useWindowDimensions()
   const homePageProps = useMemo(() => ({
     packageName, pythonProjectVersion, webAppProjectVersion
   }), [packageName, pythonProjectVersion, webAppProjectVersion])
@@ -55,7 +56,19 @@ const FigurlApp: FunctionComponent<Props> = ({
     */
     return (
       <div style={{padding: 20}}>
-          This website cannot be viewed on a mobile device. Please open this link on a computer or enable the "Desktop" mode in your browser.
+        <p>
+          This website cannot be viewed in mobile device mode. Please open this link on a computer or enable the "Desktop" mode in your browser.
+          If the page still does not load, try using your device in landscape orientation.
+        </p>
+        <p>
+          There are known issues with Firefox on mobile, so we recommend either Chrome or Safari.
+        </p>
+        <p>
+          <a href="https://figurl.org">Figurl home</a>
+        </p>
+        <p style={{fontSize: 12, color: 'gray'}}>
+          Window dimensions: {width} x {height}
+        </p>
       </div>
     )
   }

@@ -23,13 +23,13 @@ const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePage
         setRoute({routePath: '/home'})
     }, [setRoute])
 
-    const applicationBarHeight = hide === 0 ? 50 : 0
+    const applicationBarHeight = ((hide === 0) && (height >= 400)) ? 50 : 0
 
     return (
         <div>
             <KacheryCloudTaskManagerSetup projectId={projectId || ''} backendId={backendId}>
                 {
-                    routePath !== '/github/auth' &&
+                    routePath !== '/github/auth' && applicationBarHeight > 0 &&
                     <ApplicationBar
                         title={figureLabel || ''}
                         onHome={handleHome}
