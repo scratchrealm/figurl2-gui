@@ -1,8 +1,9 @@
 import { Button } from "@material-ui/core";
+import { useGithubAuth } from "GithubAuth/useGithubAuth";
 import { sleepMsec } from "kacheryCloudTasks/PubsubSubscription";
-import { FunctionComponent, useEffect, useState } from "react";
-import GitHubLoginWindow, { GithubLoginStatus } from '../MainWindow/GitHub/GitHubLoginWindow';
-import FigureInterface, { getGitHubTokenInfoFromLocalStorage } from "./FigureInterface";
+import { FunctionComponent, useEffect } from "react";
+import GitHubLoginWindow from '../MainWindow/GitHub/GitHubLoginWindow';
+import FigureInterface from "./FigureInterface";
 
 type Props = {
     figureInterface: FigureInterface
@@ -11,6 +12,7 @@ type Props = {
 }
 
 const GitHubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose, params}) => {
+    const {signedIn} = useGithubAuth()
     useEffect(() => {
         figureInterface.authorizePermission('store-github-file', params, undefined)
         let cancel = false
@@ -28,35 +30,12 @@ const GitHubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
         }
     }, [figureInterface, onClose, params])
 
-    const [loginStatus, setLoginStatus] = useState<GithubLoginStatus>({status: 'checking'})
-    useEffect(() => {
-		// polling
-		const intervalId = setInterval(() => {
-			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
-			if (tokenInfo?.token) {
-				setLoginStatus({
-					status: 'logged-in',
-					accessToken: tokenInfo.token
-				})
-			}
-			else {
-				setLoginStatus({
-					status: 'not-logged-in'
-				})
-			}
-		}, 1000)
-		return () => {
-			clearInterval(intervalId)
-		}
-	}, [])
-    // const [resetTokenVisible, setResetTokenVisible] = useState(false)
-
     return (
         <div>
             <h3>This application is requesting to create or update the following file on GitHub on your behalf.</h3>
             <h3>{params.uri}</h3>
             {
-                loginStatus.status === 'logged-in' ? (
+                signedIn ? (
                     <span>
                         <p>To allow this, click "Authorize" below.</p>
                         <div>
@@ -70,6 +49,7 @@ const GitHubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
             }
             <hr />
             <GitHubLoginWindow
+                defaultScope="repo"
                 onChange={() => {}}
             />
             {/* <hr /> */}

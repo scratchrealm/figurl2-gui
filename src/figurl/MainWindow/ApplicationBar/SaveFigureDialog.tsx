@@ -1,12 +1,12 @@
 import { Button, Table, TableBody, TableCell, TableRow } from '@material-ui/core';
-import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
 import FigureInterface from 'figurl/Figure2/FigureInterface';
 import formatByteCount from 'figurl/Figure2/formatByteCount';
+import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { AddFigureRequest, isAddFigureResponse } from 'miscTypes/FigureRequest';
 import postFigureRequest from 'miscTypes/postFigureRequest';
 import QueryString from 'querystring';
-import React, { FunctionComponent, useCallback, useState } from 'react';
+import { FunctionComponent, useCallback, useState } from 'react';
 import EditDescriptionControl from './EditDescriptionControl';
 import EditLabelControl from './EditLabelControl';
 import FileManifestTable from './FileManifestTable';
@@ -18,13 +18,14 @@ type Props = {
 
 const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) => {
     const {queryString, viewUri, figureDataUri, label} = useRoute2()
-    const {userId, googleIdToken} = useSignedIn()
+    // const {userId, googleIdToken} = useSignedIn()
+    const {userId, accessToken} = useGithubAuth()
     const [editLabel, setEditLabel] = useState<string>(label || 'untitled')
     const [notes, setNotes] = useState<string>('')
     
     const handleSave = useCallback(() => {
         if (!userId) return
-        if (!googleIdToken) return
+        if (!accessToken) return
         if (!figureDataUri) return
         if (!viewUri) return
         const query = QueryString.parse(queryString)
@@ -42,7 +43,7 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) 
                 notes,
                 auth: {
                     userId: userId.toString(),
-                    googleIdToken
+                    githubAccessToken: accessToken
                 }
             }
             const resp = await postFigureRequest(req, {reCaptcha: true})
@@ -54,7 +55,7 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) 
             }
             onClose()
         })()
-    }, [figureDataUri, editLabel, queryString, userId, googleIdToken, onClose, viewUri, notes, figureInterface])
+    }, [figureDataUri, editLabel, queryString, userId, accessToken, onClose, viewUri, notes, figureInterface])
     return (
         <div style={{overflowY: 'auto'}}>
             <h1>Save figure</h1>

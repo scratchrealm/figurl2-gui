@@ -1,4 +1,4 @@
-import { useSignedIn } from 'components/googleSignIn/GoogleSignIn'
+import { useGithubAuth } from 'GithubAuth/useGithubAuth'
 import { FunctionComponent } from 'react'
 import './Home.css'
 import IntroSection from './IntroSection'
@@ -12,7 +12,8 @@ export type HomePageProps = {
 }
 
 const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectVersion, webAppProjectVersion}) => {
-    const {signedIn} = useSignedIn()
+    // const {signedIn} = useSignedIn()
+    const {signedIn} = useGithubAuth()
 
     return (
         <div style={{margin: 'auto', maxWidth: 1200, paddingLeft: 10, paddingRight: 10}}>

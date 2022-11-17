@@ -1,24 +1,24 @@
-import { UserId } from 'commonInterface/kacheryTypes';
-import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
 import Hyperlink from 'components/Hyperlink/Hyperlink';
 import NiceTable from 'components/NiceTable/NiceTable';
 import { computeSizeStringFromFileManifest } from 'figurl/MainWindow/ApplicationBar/SaveFigureDialog';
+import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { DeleteFigureRequest, Figure, GetFiguresRequest, isDeleteFigureResponse, isGetFiguresResponse } from 'miscTypes/FigureRequest';
 import postFigureRequest from 'miscTypes/postFigureRequest';
-import React, { FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react';
+import { FunctionComponent, useCallback, useEffect, useMemo, useState } from 'react';
 
 type Props = {
 
 }
 
-const useFigures = (userId: UserId | null | undefined, googleIdToken: string | undefined) => {
+const useFigures = () => {
+    const {userId, accessToken} = useGithubAuth()
     const [figures, setFigures] = useState<Figure[] | undefined>(undefined)
     const [updateCode, setUpdateCode] = useState<number>(0)
     const incrementUpdateCode = useCallback(() => {setUpdateCode(c => (c+1))}, [])
     useEffect(() => {
         setFigures(undefined)
         if (!userId) return
-        if (!googleIdToken) return
+        if (!accessToken) return
         let canceled = false
         ;(async () => {
             const req: GetFiguresRequest = {
@@ -26,7 +26,7 @@ const useFigures = (userId: UserId | null | undefined, googleIdToken: string | u
                 ownerId: userId.toString(),
                 auth: {
                     userId: userId.toString(),
-                    googleIdToken
+                    githubAccessToken: accessToken
                 }
             }
             const resp = await postFigureRequest(req, {reCaptcha: false})
@@ -39,20 +39,20 @@ const useFigures = (userId: UserId | null | undefined, googleIdToken: string | u
         return (() => {
             canceled = true
         })
-    }, [userId, updateCode, googleIdToken])
+    }, [userId, updateCode, accessToken])
     const refreshFigures = useCallback(() => {
         incrementUpdateCode()
     }, [incrementUpdateCode])
     const deleteFigure = useCallback((figureId: string) => {
         if (!userId) return
-        if (!googleIdToken) return
+        if (!accessToken) return
         ;(async () => {
             const req: DeleteFigureRequest = {
                 type: 'deleteFigure',
                 figureId,
                 auth: {
                     userId: userId.toString(),
-                    googleIdToken
+                    githubAccessToken: accessToken
                 }
             }
             const resp = await postFigureRequest(req, {reCaptcha: true})
@@ -61,7 +61,7 @@ const useFigures = (userId: UserId | null | undefined, googleIdToken: string | u
             }
             refreshFigures()
         })()
-    }, [refreshFigures, userId, googleIdToken])
+    }, [refreshFigures, userId, accessToken])
     return {figures, deleteFigure, refreshFigures}
 }
 
@@ -89,8 +89,7 @@ const columns = [
 ]
 
 const SavedFiguresTable: FunctionComponent<Props> = () => {
-    const {userId, googleIdToken} = useSignedIn()
-    const {figures, deleteFigure} = useFigures(userId, googleIdToken)
+    const {figures, deleteFigure} = useFigures()
     const rows = useMemo(() => (
         figures ? figures.map(figure => {
             const qsParts: string[] = []

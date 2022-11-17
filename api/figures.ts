@@ -1,15 +1,17 @@
 import { VercelRequest, VercelResponse } from '@vercel/node'
 import addFigureHandler from '../apiHelpers/addFigureHandler'
-import googleVerifyIdToken from '../apiHelpers/common/googleVerifyIdToken'
+import githubVerifyAccessToken from '../apiHelpers/common/githubVerifyAccessToken'
 import verifyReCaptcha, { VerifiedReCaptchaInfo } from '../apiHelpers/common/verifyReCaptcha'
 import deleteFigureHandler from '../apiHelpers/deleteFigureHandler'
 import getFiguresHandler from '../apiHelpers/getFiguresHandler'
 import { Auth, isFigureRequest } from '../src/miscTypes/FigureRequest'
 
 const verifyAuth = async (auth: Auth) => {
-    const {userId, googleIdToken, reCaptchaToken} = auth
-    if ((userId) && (!googleIdToken)) throw Error('No google id token')
-    const verifiedUserId = userId ? await googleVerifyIdToken(userId, googleIdToken) : ''
+    const {userId, githubAccessToken, reCaptchaToken} = auth
+    // if ((userId) && (!googleIdToken)) throw Error('No google id token')
+    // const verifiedUserId = userId ? await googleVerifyIdToken(userId, googleIdToken) : ''
+    if ((userId) && (!githubAccessToken)) throw Error('No github access token')
+    const verifiedUserId = userId ? await githubVerifyAccessToken(userId, githubAccessToken) : ''
     const verifiedReCaptchaInfo: VerifiedReCaptchaInfo | undefined = await verifyReCaptcha(reCaptchaToken)
     return {verifiedUserId, verifiedReCaptchaInfo}
 }

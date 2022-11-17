@@ -1,15 +1,15 @@
 import { faGithub } from "@fortawesome/free-brands-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Button } from "@material-ui/core";
-import axios from "axios";
+import { Button, Checkbox, FormControlLabel } from "@material-ui/core";
 import Hyperlink from "components/Hyperlink/Hyperlink";
-import { getGitHubTokenInfoFromLocalStorage, setGitHubTokenInfoToLocalStorage } from "figurl/Figure2/FigureInterface";
-import { FunctionComponent, useCallback, useEffect, useState } from "react";
+import { useGithubAuth } from "GithubAuth/useGithubAuth";
+import { FunctionComponent, useCallback, useState } from "react";
 import PersonalAccessTokenWindow from "./PersonalAccessTokenWindow";
 
 type Props ={
 	onClose?: () => void
 	onChange: () => void
+	defaultScope: '' | 'repo'
 }
 
 export type GithubLoginStatus ={
@@ -17,63 +17,22 @@ export type GithubLoginStatus ={
 	accessToken?: string
 }
 
-const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
-	const [loginStatus, setLoginStatus] = useState<GithubLoginStatus>({status: 'checking'})
-	const [userName, setUserName] = useState('')
+const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange, defaultScope}) => {
 	const [personalAccessTokenMode, setPersonalAccessTokenMode] = useState(false)
+	const [githubScope, setGithubScope] = useState<'' | 'repo'>(defaultScope)
 	const GITHUB_CLIENT_ID = process.env.REACT_APP_GITHUB_CLIENT_ID
-	useEffect(() => {
-		// polling
-		const intervalId = setInterval(() => {
-			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
-			if (tokenInfo?.token) {
-				setLoginStatus({
-					status: 'logged-in',
-					accessToken: tokenInfo.token
-				})
-			}
-			else {
-				setLoginStatus({
-					status: 'not-logged-in'
-				})
-			}
-		}, 1000)
-		return () => {
-			clearInterval(intervalId)
-		}
-	}, [])
-	useEffect(() => {
-		if (loginStatus.accessToken) {
-			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
-			const u = tokenInfo?.userId
-			const elapsed = Date.now() - (tokenInfo?.userIdTimestamp || 0)
-			if ((u) && (elapsed < 1000 * 60 * 10)) {
-				setUserName(u)
-			}
-			else {
-				axios.get(`https://api.github.com/user`, {headers: {Authorization: `token ${loginStatus.accessToken}`}}).then(resp => {
-					setGitHubTokenInfoToLocalStorage({
-						...tokenInfo,
-						userId: resp.data.login,
-						userIdTimestamp: Date.now()
-					})
-					setUserName(resp.data.login)
-				})
-			}
-		}
-	}, [loginStatus.accessToken])
+	const {userId, loginStatus, clearAccessToken, isPersonalAccessToken} = useGithubAuth()
 	const handleClearAccessToken = useCallback(() => {
-		setGitHubTokenInfoToLocalStorage({})
+		clearAccessToken()
 		onChange()
-	}, [onChange])
-	const githubTokenInfo = getGitHubTokenInfoFromLocalStorage()
+	}, [clearAccessToken, onChange])
 	if (!GITHUB_CLIENT_ID) {
 		return <div>Environment variable not set: REACT_APP_GITHUB_CLIENT_ID</div>
 	}
-	if (loginStatus.status === 'checking') {
+	if (loginStatus === 'checking') {
 		return <div>Checking</div>
 	}
-	else if (loginStatus.status === 'not-logged-in') {
+	else if (loginStatus === 'not-logged-in') {
 		if (personalAccessTokenMode) {
 			return <PersonalAccessTokenWindow onChange={onChange} />
 		}
@@ -81,7 +40,26 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 			return (
 				<div>
 					<div>
-						<a href={`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo`} target="_blank" rel="noreferrer"><FontAwesomeIcon icon={faGithub} /> Log in with GitHub</a>
+					<FormControlLabel
+						control={
+							<Checkbox checked={githubScope === 'repo'} onClick={() => {setGithubScope(githubScope === '' ? 'repo' : '')}} />
+						}
+						label="Allow read/write access to repos"/>
+					</div>
+					<div>
+						{/* <a href={`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo`} target="_blank" rel="noreferrer"><FontAwesomeIcon icon={faGithub} /> Log in with GitHub</a> */}
+						<a
+							href={
+								githubScope === 'repo' ? (
+									`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=repo`
+								) : (
+									`https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}`
+								)
+							}
+							target="_blank"
+							rel="noreferrer"
+						>
+						<FontAwesomeIcon icon={faGithub} /> Log in with GitHub</a>
 					</div>
 					<h3>- OR -</h3>
 					<div>
@@ -91,11 +69,11 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 			)
 		}
 	}
-	else if (loginStatus.status === 'logged-in') {
+	else if (loginStatus === 'logged-in') {
 		return (
 			<div>
 				<p>
-					You are logged in with GitHub (user name: {userName})
+					You are logged in with GitHub (user name: {userId})
 				</p>
 				{onClose && <Button onClick={onClose}>OK</Button>}
 				<hr />
@@ -104,7 +82,7 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 				</div>
 				<br />
 				{
-					githubTokenInfo?.isPersonalAccessToken ? (
+					isPersonalAccessToken ? (
 						<div style={{paddingLeft: 6, fontSize: 12}}>
 							<Hyperlink href="https://github.com/settings/apps" target="_blank" style={{color: 'gray'}}>Revoke or manage personal access token</Hyperlink>
 						</div>
@@ -118,7 +96,7 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange}) => {
 		)
 	}
 	else {
-		return <div>Unexpected login status {loginStatus.status}</div>
+		return <div>Unexpected login status {loginStatus}</div>
 	}
 }
 

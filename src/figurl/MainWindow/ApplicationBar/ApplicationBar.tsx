@@ -1,9 +1,9 @@
-import { AppBar, Button, Toolbar } from '@material-ui/core';
-import { useSignedIn } from 'components/googleSignIn/GoogleSignIn';
+import { AppBar, Toolbar } from '@material-ui/core';
 import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useRoute2 } from 'figurl/Figure2/Figure2';
 import FigureInterface from 'figurl/Figure2/FigureInterface';
 import GitHubAccessControl from 'figurl/GitHubAccessWindow/GitHubAccessControl';
+import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { FunctionComponent, useCallback, useMemo, useState } from 'react';
 import GitHubLoginWindow from '../GitHub/GitHubLoginWindow';
 import SaveFigureControl from './SaveFigureControl';
@@ -47,14 +47,17 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
     const {routePath} = useRoute2()
 
     // const signedIn = useSignedIn()
-    const {signedIn, userId, gapi} = useSignedIn()
-    const handleLogin = useCallback(() => {
-        gapi.auth2.getAuthInstance().signIn();
-    }, [gapi])
-    const handleLogout = useCallback(() => {
-        gapi.auth2.getAuthInstance().signOut()
-        // setRoute({routePath: '/home'})
-    }, [gapi])
+    // const {signedIn, userId, gapi} = useSignedIn()
+
+    const {signedIn, userId} = useGithubAuth()
+
+    // const handleLogin = useCallback(() => {
+    //     gapi.auth2.getAuthInstance().signIn();
+    // }, [gapi])
+    // const handleLogout = useCallback(() => {
+    //     gapi.auth2.getAuthInstance().signOut()
+    //     // setRoute({routePath: '/home'})
+    // }, [gapi])
 
     if (height === 0) return <span />
 
@@ -77,22 +80,7 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     )
                 } */}
                 <span style={{marginLeft: 'auto'}} />
-                {
-                    signedIn && (
-                        <span style={{fontFamily: 'courier', color: 'lightgray'}}>{userId}&nbsp;&nbsp;</span>
-                    )
-                }
-                {/* <span style={{paddingBottom: 0, color: 'white'}}>
-                    <ProjectControl onOpen={openConfigureProject} color={projectControlColor} />
-                </span> */}
-                {/* <span style={{paddingBottom: 0, color: 'white'}}>
-                    <TaskMonitorControl onOpen={openTaskMonitor} color="white" />
-                    &nbsp;
-                </span> */}
-                <span style={{paddingBottom: 0, color: 'white'}}>
-                    <GitHubAccessControl onOpen={openGitHubAccessWindow} />
-                    &nbsp;
-                </span>
+                
                 {
                     routePath === '/f' && (
                         <span style={{paddingBottom: 0, color: 'white'}}>
@@ -100,13 +88,43 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                         </span>
                     )
                 }
+                
                 {
+                    signedIn && (
+                        <span style={{fontFamily: 'courier', color: 'lightgray', cursor: 'pointer'}} title={`Signed in as ${userId}`}>{userId}&nbsp;&nbsp;</span>
+                    )
+                }
+                {/* {
+                    signedIn && (
+                        <span style={{fontFamily: 'courier', color: 'lightgray'}}>{userId}&nbsp;&nbsp;</span>
+                    )
+                } */}
+
+
+                {/* <span style={{paddingBottom: 0, color: 'white'}}>
+                    <ProjectControl onOpen={openConfigureProject} color={projectControlColor} />
+                </span> */}
+                {/* <span style={{paddingBottom: 0, color: 'white'}}>
+                    <TaskMonitorControl onOpen={openTaskMonitor} color="white" />
+                    &nbsp;
+                </span> */}
+                <span style={{paddingBottom: 0, color: 'white'}} title={signedIn ? "Manage GitHub sign in" : "Sign in with GitHub"}>
+                    <GitHubAccessControl onOpen={openGitHubAccessWindow} />
+                    &nbsp;
+                </span>
+                
+                
+                
+                {/* {
                     signedIn ? (
                         <Button color="inherit" onClick={handleLogout}>Sign out</Button>
                     ) : (
                         <Button color="inherit" onClick={handleLogin}>Sign in</Button>
                     )
-                }
+                } */}
+
+
+
                 {/* <LoginGitHub -- at some point in the future we can login via github - see ../LoginGitHub folder
                     clientId="..."
                     onSuccess={handleLoginSuccess}
@@ -146,7 +164,10 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                 {/* <GitHubAccessWindow
                     onChange={() => {}}
                 /> */}
-                <GitHubLoginWindow onClose={() => closeGitHubAccessWindow()} onChange={() => {}} />
+                <GitHubLoginWindow
+                    defaultScope=""
+                    onClose={() => closeGitHubAccessWindow()} onChange={() => {}}
+                />
             </ModalWindow>
         </span>
     )

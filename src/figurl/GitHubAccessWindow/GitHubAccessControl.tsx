@@ -1,39 +1,18 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faGithub } from '@fortawesome/free-brands-svg-icons';
-import { FunctionComponent, useEffect, useState } from 'react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { IconButton } from '@material-ui/core';
-import { getGitHubTokenInfoFromLocalStorage } from 'figurl/Figure2/FigureInterface';
-import { GithubLoginStatus } from 'figurl/MainWindow/GitHub/GitHubLoginWindow';
+import { useGithubAuth } from 'GithubAuth/useGithubAuth';
+import { FunctionComponent } from 'react';
 
 type Props = {
     onOpen: () => void
 }
 
 const GitHubAccessControl: FunctionComponent<Props> = ({ onOpen }) => {
-    const [loginStatus, setLoginStatus] = useState<GithubLoginStatus>({status: 'checking'})
-    useEffect(() => {
-		// polling
-		const intervalId = setInterval(() => {
-			const tokenInfo = getGitHubTokenInfoFromLocalStorage()
-			if (tokenInfo?.token) {
-				setLoginStatus({
-					status: 'logged-in',
-					accessToken: tokenInfo.token
-				})
-			}
-			else {
-				setLoginStatus({
-					status: 'not-logged-in'
-				})
-			}
-		}, 4000)
-		return () => {
-			clearInterval(intervalId)
-		}
-	}, [])
+	const {signedIn} = useGithubAuth()
     return (
         <IconButton onClick={onOpen}>
-            <FontAwesomeIcon icon={faGithub} style={{color: loginStatus.status === 'logged-in' ? 'darkblue' : 'gray'}} />
+            <FontAwesomeIcon icon={faGithub} style={{color: signedIn ? 'darkblue' : 'gray'}} />
         </IconButton>
     );
 }
