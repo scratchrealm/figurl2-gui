@@ -1,5 +1,6 @@
 import { MuiThemeProvider } from '@material-ui/core';
 import { testSignatures } from 'commonInterface/crypto/signatures';
+import GoogleSignInSetup from 'components/googleSignIn/GoogleSignInSetup';
 import Hyperlink from 'components/Hyperlink/Hyperlink';
 import GithubAuthSetup from 'GithubAuth/GithubAuthSetup';
 import { FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
@@ -81,7 +82,7 @@ const FigurlApp: FunctionComponent<Props> = ({
     <div className="App">
       <MuiThemeProvider theme={theme}>
         <BrowserRouter>
-          {/* <GoogleSignInSetup> */}
+          <GoogleSignInSetup>
             <GithubAuthSetup>
               <FigurlSetup localMode={localMode}>
                 <MainWindow
@@ -92,7 +93,7 @@ const FigurlApp: FunctionComponent<Props> = ({
                 />
               </FigurlSetup>
             </GithubAuthSetup>
-          {/* </GoogleSignInSetup> */}
+          </GoogleSignInSetup>
         </BrowserRouter>
       </MuiThemeProvider>
     </div>

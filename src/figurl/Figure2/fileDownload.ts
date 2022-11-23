@@ -138,6 +138,7 @@ export type FindFileResponse = {
     bucketUri?: string
     objectKey?: string
     cacheHit?: boolean
+    fallback?: boolean
 }
 
 export const isFindFileResponse = (x: any): x is FindFileResponse => {
@@ -148,7 +149,8 @@ export const isFindFileResponse = (x: any): x is FindFileResponse => {
         url: optional(isString),
         bucketUri: optional(isString),
         objectKey: optional(isString),
-        cacheHit: optional(isBoolean)
+        cacheHit: optional(isBoolean),
+        fallback: optional(isBoolean)
     })
 }
 
