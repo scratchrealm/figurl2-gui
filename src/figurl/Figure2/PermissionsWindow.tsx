@@ -1,7 +1,8 @@
 import { Button } from "@material-ui/core";
 import GitHubLoginWindow from "figurl/MainWindow/GitHub/GitHubLoginWindow";
 import { useGithubAuth } from "GithubAuth/useGithubAuth";
-import { FunctionComponent } from "react";
+import { sleepMsec } from "kacheryCloudTasks/PubsubSubscription";
+import { FunctionComponent, useEffect } from "react";
 import FigureInterface from "./FigureInterface";
 
 type Props = {
@@ -11,6 +12,23 @@ type Props = {
 
 const PermissionsWindow: FunctionComponent<Props> = ({figureInterface, onClose}) => {
     const {userId} = useGithubAuth()
+
+    useEffect(() => {
+        figureInterface.authorizePermission('store-file', {}, undefined)
+        let cancel = false
+        ;(async () => {
+            while (!cancel) {
+                const p = figureInterface.hasPermission('store-file', {})
+                if (p !== undefined) {
+                    onClose()
+                }
+                await sleepMsec(100)
+            }
+        })()
+        return () => {
+            cancel = true
+        }
+    }, [figureInterface, onClose])
 
     return (
         <div>

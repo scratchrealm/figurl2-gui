@@ -22,7 +22,7 @@ const GitHubPermissionsWindow: FunctionComponent<Props> = ({figureInterface, onC
                 if (p !== undefined) {
                     onClose()
                 }
-                await sleepMsec(300)
+                await sleepMsec(100)
             }
         })()
         return () => {

@@ -1,6 +1,5 @@
 import axios, { AxiosResponse } from 'axios'
-import { isString, JSONStringifyDeterministic, UserId } from 'commonInterface/kacheryTypes'
-import GoogleSignInClient from 'components/googleSignIn/GoogleSignInClient'
+import { isString, JSONStringifyDeterministic } from 'commonInterface/kacheryTypes'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
@@ -30,16 +29,15 @@ class FigureInterface {
     #requestedFiles: {[uri: string]: {size?: number, name?: string}} = {}
     #authorizedPermissions: {[key: string]: boolean | undefined} = {}
     #githubAuth: {userId?: string, accessToken?: string} = {}
+    #figureData: any | undefined = undefined
     constructor(private a: {
         projectId: string | undefined,
         backendId: string | null,
         figureId: string,
         viewUrl: string,
-        figureData: any,
         figureDataUri?: string,
         figureDataSize?: number,
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
-        googleSignInClient: GoogleSignInClient,
         taskManager?: KacheryCloudTaskManager,
         localMode: boolean,
         kacheryGatewayUrl: string
@@ -60,14 +58,16 @@ class FigureInterface {
                         const request = msg.request
                         if (!isFigurlRequest(request)) return
                         if (request.type === 'getFigureData') {
-                            const response: GetFigureDataResponse = {
-                                type: 'getFigureData',
-                                figureData: a.figureData
-                            }
-                            this._sendMessageToChild({
-                                type: 'figurlResponse',
-                                requestId,
-                                response
+                            this._waitForFigureData().then(() => {
+                                const response: GetFigureDataResponse = {
+                                    type: 'getFigureData',
+                                    figureData: this.#figureData
+                                }
+                                this._sendMessageToChild({
+                                    type: 'figurlResponse',
+                                    requestId,
+                                    response
+                                })
                             })
                         }
                         else if (request.type === 'getFileData') {
@@ -146,17 +146,9 @@ class FigureInterface {
                 }
             }
         })
-        const updateSignedIn = () => {
-            this._sendMessageToChild({
-                type: 'setCurrentUser',
-                userId: a.googleSignInClient.userId ? a.googleSignInClient.userId as any as UserId : undefined,
-                googleIdToken: a.googleSignInClient.idToken || undefined
-            })
-        }
-        a.googleSignInClient.onSignedInChanged(() => {
-            updateSignedIn()
-        })
-        updateSignedIn()
+    }
+    setFigureData(x: any) {
+        this.#figureData = x
     }
     fileManifest() {
         const uris = this.#requestedFileUris
@@ -455,10 +447,10 @@ class FigureInterface {
         let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl, this.githubAuth)
         if (!uri) throw Error('Error storing file')
         if (request.jotId) {
-            if ((!this.a.googleSignInClient.userId) || (!this.a.googleSignInClient.idToken)) {
+            if ((!this.#githubAuth.userId) || (!this.#githubAuth.accessToken)) {
                 throw Error('Unable to set jot value: not signed in')
             }
-            const uri2 = await setJotValue(request.jotId, uri, {userId: this.a.googleSignInClient.userId, googleIdToken: this.a.googleSignInClient.idToken})
+            const uri2 = await setJotValue(request.jotId, uri, {userId: this.#githubAuth.userId, accessToken: this.#githubAuth.accessToken})
             if (!uri2) {
                 return {
                     type: 'storeFile',
@@ -528,10 +520,22 @@ class FigureInterface {
         return this.a.kacheryGatewayUrl
     }
     setGithubAuth(userId?: string, accessToken?: string) {
+        if ((userId === this.#githubAuth.userId) && (accessToken === this.#githubAuth.accessToken)) {
+            // stop reference cycle, react hooks
+            return
+        }
         this.#githubAuth = {userId, accessToken}
     }
     public get githubAuth() {
-        return {...this.#githubAuth}
+        return this.#githubAuth // important to return the reference - for react hook reasons
+    }
+    async _waitForFigureData() {
+        while (true) {
+            if (this.#figureData) {
+                return
+            }
+            await sleepMsec(100)
+        }
     }
     _sendMessageToChild(msg: MessageToChild) {
         if (!this.a.iframeElement.current) {
@@ -561,13 +565,13 @@ export const getJotValue = async (jotId: string) => {
     return x.data.value
 }
 
-export const setJotValue = async (jotId: string, value: string, o: {userId: string, googleIdToken: string}) => {
+export const setJotValue = async (jotId: string, value: string, o: {userId: string, accessToken: string}) => {
     const request = {
         type: 'setJotValue',
         jotId,
         value,
         userId: o.userId,
-        googleIdToken: o.googleIdToken
+        accessToken: o.accessToken
     }
     let x: AxiosResponse
     try {
