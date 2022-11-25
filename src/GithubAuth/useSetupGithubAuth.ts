@@ -9,9 +9,19 @@ type GithubLoginStatus ={
     isPersonalAccessToken?: boolean
 }
 
+const initialTokenInfo = getGitHubTokenInfoFromLocalStorage()
+const initialUserName = initialTokenInfo?.userId
+const initialLoginStatus: GithubLoginStatus = initialTokenInfo?.userId && initialTokenInfo.token ? (
+	{status: 'logged-in', accessToken: initialTokenInfo.token, isPersonalAccessToken: initialTokenInfo.isPersonalAccessToken}
+) : {status: 'checking'}
+export const initialGithubAuth = {
+	userId: initialUserName,
+	accessToken: initialLoginStatus.accessToken
+}
+
 const useSetupGithubAuth = (): GithubAuthData => {
-    const [loginStatus, setLoginStatus] = useState<GithubLoginStatus>({status: 'checking'})
-    const [userName, setUserName] = useState('')
+    const [loginStatus, setLoginStatus] = useState<GithubLoginStatus>(initialLoginStatus)
+    const [userName, setUserName] = useState(initialUserName)
     useEffect(() => {
 		// polling
 		const intervalId = setInterval(() => {

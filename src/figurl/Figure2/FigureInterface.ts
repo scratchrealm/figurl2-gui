@@ -1,5 +1,6 @@
 import axios, { AxiosResponse } from 'axios'
 import { isString, JSONStringifyDeterministic } from 'commonInterface/kacheryTypes'
+import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth'
 import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
 import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
@@ -28,7 +29,7 @@ class FigureInterface {
     #requestedFileUris: string[] = []
     #requestedFiles: {[uri: string]: {size?: number, name?: string}} = {}
     #authorizedPermissions: {[key: string]: boolean | undefined} = {}
-    #githubAuth: {userId?: string, accessToken?: string} = {}
+    #githubAuth: {userId?: string, accessToken?: string} = initialGithubAuth
     #figureData: any | undefined = undefined
     constructor(private a: {
         projectId: string | undefined,

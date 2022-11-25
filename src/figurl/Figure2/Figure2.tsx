@@ -4,6 +4,7 @@ import { useLocalMode } from 'figurl/FigurlSetup';
 import { useModalDialog } from 'figurl/MainWindow/ApplicationBar/ApplicationBar';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
 import useBackendId from 'figurl/useBackendId';
+import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth';
 import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
@@ -28,6 +29,9 @@ type Progress = {
     onProgress: (callback: (a: {loaded: number, total: number}) => void) => void
 }
 
+// this is important, because the effect might get called multiple times
+const figureDataCache: {[dataUri: string]: any} = {}
+
 export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined, githubAuth?: {userId?: string, accessToken?: string}) => {
     const [figureData, setFigureData] = useState<any>()
     const [figureDataSize, setFigureDataSize] = useState<number | undefined>()
@@ -46,6 +50,10 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
     }, [])
     const localMode = useLocalMode()
     useEffect(() => {
+        if ((dataUri) && (figureDataCache[dataUri])) {
+            setFigureData(figureDataCache[dataUri])
+            return
+        }
         if (!kacheryGatewayUrl) return
         ;(async () => {
             if (!dataUri) return
@@ -80,6 +88,7 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
                 throw Error(`Unexpected data URI: ${dataUri}`)
             }
             data = await deserializeReturnValue(data)
+            figureDataCache[dataUri] = data
             setFigureData(data)
         })()
     }, [dataUri, reportProgress, localMode, kacheryGatewayUrl, githubAuth])
@@ -140,7 +149,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
     const {visible: githubPermissionsWindowVisible, handleOpen: openGitHubPermissionsWindow, handleClose: closeGitHubPermissionsWindow} = useModalDialog()
     const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
-    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : undefined)
+    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : initialGithubAuth)
     const [permissionsParams, setPermissionsParams] = useState<any>()
 
     useEffect(() => {
