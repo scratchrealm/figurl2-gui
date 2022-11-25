@@ -29,6 +29,7 @@ class FigureInterface {
     #requestedFileUris: string[] = []
     #requestedFiles: {[uri: string]: {size?: number, name?: string}} = {}
     #authorizedPermissions: {[key: string]: boolean | undefined} = {}
+    #githubAuth: {userId?: string, accessToken?: string} = {}
     constructor(private a: {
         projectId: string | undefined,
         backendId: string | null,
@@ -220,7 +221,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1 = a[2]
 
-                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
             }
             else if (uri.startsWith('jot://')) {
                 const jotId = uri.split('?')[0].split('/')[2]
@@ -231,7 +232,7 @@ class FigureInterface {
                 }
                 const a = uri0.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
             }
             else if (uri.startsWith('gh://')) {
                 const {content} = await loadGitHubFileDataFromUri(uri)
@@ -242,7 +243,7 @@ class FigureInterface {
                         const a = uri2.split('?')[0].split('/')
                         const sha1 = a[2]
 
-                        data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                        data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
                     }
                     else throw Error(`Unexpected content for .uri file ${uri} (expected a URI)`)
                 }
@@ -259,7 +260,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
 
-                data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
             }
             else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
                 const a = uri.split('?')[0].split('/')
@@ -314,7 +315,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1 = a[2]
 
-                const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl) || {}
+                const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl, this.#githubAuth) || {}
                 if (!url) {
                     throw Error('Unable to get file download url')
                 }
@@ -330,7 +331,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
 
-                const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl) || {}
+                const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, this.githubAuth) || {}
                 if (!url) {
                     throw Error('Unable to get file download url')
                 }
@@ -451,7 +452,7 @@ class FigureInterface {
         }
         
         let {fileData} = request
-        let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl)
+        let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl, this.githubAuth)
         if (!uri) throw Error('Error storing file')
         if (request.jotId) {
             if ((!this.a.googleSignInClient.userId) || (!this.a.googleSignInClient.idToken)) {
@@ -525,6 +526,12 @@ class FigureInterface {
     }
     public get kacheryGatewayUrl() {
         return this.a.kacheryGatewayUrl
+    }
+    setGithubAuth(userId?: string, accessToken?: string) {
+        this.#githubAuth = {userId, accessToken}
+    }
+    public get githubAuth() {
+        return {...this.#githubAuth}
     }
     _sendMessageToChild(msg: MessageToChild) {
         if (!this.a.iframeElement.current) {

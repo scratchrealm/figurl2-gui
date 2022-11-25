@@ -1,7 +1,8 @@
 import { useRoute2 } from 'figurl/Figure2/Figure2'
 import FigureInterface from 'figurl/Figure2/FigureInterface'
+import { useGithubAuth } from 'GithubAuth/useGithubAuth'
 import KacheryCloudTaskManagerSetup from 'kacheryCloudTasks/context/KacheryCloudTaskManagerSetup'
-import React, { useCallback, useState } from 'react'
+import React, { useCallback, useEffect, useState } from 'react'
 import { HomePageProps } from '../HomePage/HomePage'
 import ApplicationBar from './ApplicationBar/ApplicationBar'
 import Routes from './Routes'
@@ -24,6 +25,11 @@ const MainWindow: React.FunctionComponent<Props> = ({packageName, logo, homePage
     }, [setRoute])
 
     const applicationBarHeight = ((hide === 0) && (height >= 400)) ? 50 : 0
+    const {userId, accessToken} = useGithubAuth()
+    useEffect(() => {
+        if (!figureInterface) return
+        figureInterface.setGithubAuth(userId, accessToken)
+    }, [userId, accessToken, figureInterface])
 
     return (
         <div>

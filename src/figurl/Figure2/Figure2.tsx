@@ -29,7 +29,7 @@ type Progress = {
     onProgress: (callback: (a: {loaded: number, total: number}) => void) => void
 }
 
-export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined) => {
+export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined, githubAuth: {userId?: string, accessToken?: string}) => {
     const [figureData, setFigureData] = useState<any>()
     const [figureDataSize, setFigureDataSize] = useState<number | undefined>()
     const {progress, reportProgress} = useMemo(() => {
@@ -60,12 +60,12 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, {localMode, parseJson: true})
+                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, githubAuth, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, {localMode, parseJson: true})
+                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, githubAuth, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('gh://')) {
                 const {content} = await loadGitHubFileDataFromUri(dataUri)
@@ -83,7 +83,7 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
             data = await deserializeReturnValue(data)
             setFigureData(data)
         })()
-    }, [dataUri, reportProgress, localMode, kacheryGatewayUrl])
+    }, [dataUri, reportProgress, localMode, kacheryGatewayUrl, githubAuth])
     return {figureData, progress, figureDataUri: dataUri, figureDataSize}
 }
 
@@ -142,7 +142,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
     const {visible: githubPermissionsWindowVisible, handleOpen: openGitHubPermissionsWindow, handleClose: closeGitHubPermissionsWindow} = useModalDialog()
     const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
-    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl)
+    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : {})
     const [permissionsParams, setPermissionsParams] = useState<any>()
 
     useEffect(() => {

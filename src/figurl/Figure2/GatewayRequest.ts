@@ -1,5 +1,6 @@
+import validateObject, { isBoolean, isEqualTo, isNumber, isOneOf, isString, optional } from "./viewInterface/validateObject"
 import { isNodeId, isSignature, NodeId, Signature } from "./viewInterface/kacheryTypes"
-import validateObject, { isEqualTo, isOneOf, isString, isNumber, optional, isBoolean } from "./viewInterface/validateObject"
+import { Client, isClient } from "types/Client"
 
 //////////////////////////////////////////////////////////////////////////////////
 // findFile
@@ -11,8 +12,10 @@ export type FindFileRequest = {
         hashAlg: 'sha1'
         hash: string
     }
-    fromClientId: NodeId
-    signature: Signature
+    fromClientId?: NodeId
+    signature?: Signature
+    githubUserId?: string
+    githubAccessToken?: string
 }
 
 export const isFindFileRequest = (x: any): x is FindFileRequest => {
@@ -27,7 +30,9 @@ export const isFindFileRequest = (x: any): x is FindFileRequest => {
     return validateObject(x, {
         payload: isPayload,
         fromClientId: optional(isNodeId),
-        signature: optional(isSignature)
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
     })
 }
 
@@ -66,8 +71,10 @@ export type InitiateFileUploadRequest = {
         hashAlg: 'sha1'
         hash: string
     }
-    fromClientId: NodeId
-    signature: Signature
+    fromClientId?: NodeId
+    signature?: Signature
+    githubUserId?: string
+    githubAccessToken?: string
 }
 
 export const isInitiateFileUploadRequest = (x: any): x is InitiateFileUploadRequest => {
@@ -82,8 +89,10 @@ export const isInitiateFileUploadRequest = (x: any): x is InitiateFileUploadRequ
     }
     return validateObject(x, {
         payload: isPayload,
-        fromClientId: isNodeId,
-        signature: isSignature
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
     })
 }
 
@@ -117,8 +126,10 @@ export type FinalizeFileUploadRequest = {
         hash: string
         size: number
     }
-    fromClientId: NodeId
-    signature: Signature
+    fromClientId?: NodeId
+    signature?: Signature
+    githubUserId?: string
+    githubAccessToken?: string
 }
 
 export const isFinalizeFileUploadRequest = (x: any): x is FinalizeFileUploadRequest => {
@@ -134,8 +145,10 @@ export const isFinalizeFileUploadRequest = (x: any): x is FinalizeFileUploadRequ
     }
     return validateObject(x, {
         payload: isPayload,
-        fromClientId: isNodeId,
-        signature: isSignature
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
     })
 }
 
@@ -149,31 +162,131 @@ export const isFinalizeFileUploadResponse = (x: any): x is FinalizeFileUploadRes
     })
 }
 
+//////////////////////////////////////////////////////////////////////////////////
+// getClientInfo
+
+export type GetClientInfoRequest = {
+    payload: {
+        type: 'getClientInfo'
+        timestamp: number
+        clientId: NodeId
+    }
+    fromClientId: NodeId
+    signature: Signature
+    githubUserId?: string
+    githubAccessToken?: string
+}
+
+export const isGetClientInfoRequest = (x: any): x is GetClientInfoRequest => {
+    const isPayload = (y: any) => {
+        return validateObject(y, {
+            type: isEqualTo('getClientInfo'),
+            timestamp: isNumber,
+            clientId: isNodeId
+        })
+    }
+    return validateObject(x, {
+        payload: isPayload,
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
+    })
+}
+
+export type GetClientInfoResponse = {
+    type: 'getClientInfo'
+    found: boolean
+    client?: Client
+}
+
+export const isGetClientInfoResponse = (x: any): x is GetClientInfoResponse => {
+    return validateObject(x, {
+        type: isEqualTo('getClientInfo'),
+        found: isBoolean,
+        client: optional(isClient)
+    })
+}
+
+//////////////////////////////////////////////////////////////////////////////////
+// getZoneInfo
+
+export type GetZoneInfoRequest = {
+    payload: {
+        type: 'getZoneInfo'
+        timestamp: number
+        zoneName: string
+    }
+    fromClientId?: NodeId
+    signature?: Signature
+    githubUserId?: string
+    githubAccessToken?: string
+}
+
+export const isGetZoneInfoRequest = (x: any): x is GetZoneInfoRequest => {
+    const isPayload = (y: any) => {
+        return validateObject(y, {
+            type: isEqualTo('getZoneInfo'),
+            timestamp: isNumber,
+            zoneName: isString
+        })
+    }
+    return validateObject(x, {
+        payload: isPayload,
+        fromClientId: optional(isNodeId),
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
+    })
+}
+
+export type GetZoneInfoResponse = {
+    type: 'getZoneInfo'
+    found: boolean
+    kacheryGatewayUrl?: string
+}
+
+export const isGetZoneInfoResponse = (x: any): x is GetZoneInfoResponse => {
+    return validateObject(x, {
+        type: isEqualTo('getZoneInfo'),
+        found: isBoolean,
+        kacheryGatewayUrl: optional(isString)
+    })
+}
+
 
 //////////////////////////////////////////////////////////////////////////////////
 
 export type GatewayRequest =
     FindFileRequest |
     InitiateFileUploadRequest |
-    FinalizeFileUploadRequest
+    FinalizeFileUploadRequest |
+    GetClientInfoRequest |
+    GetZoneInfoRequest
 
 export const isGatewayRequest = (x: any): x is GatewayRequest => {
     return isOneOf([
         isFindFileRequest,
         isInitiateFileUploadRequest,
-        isFinalizeFileUploadRequest
+        isFinalizeFileUploadRequest,
+        isGetClientInfoRequest,
+        isGetZoneInfoRequest
     ])(x)
 }
 
 export type GatewayResponse =
     FindFileResponse |
     InitiateFileUploadResponse |
-    FinalizeFileUploadResponse
+    FinalizeFileUploadResponse |
+    GetClientInfoResponse |
+    GetZoneInfoResponse
 
 export const isGatewayResponse = (x: any): x is GatewayResponse => {
     return isOneOf([
         isFindFileResponse,
         isInitiateFileUploadResponse,
-        isFinalizeFileUploadResponse
+        isFinalizeFileUploadResponse,
+        isGetClientInfoResponse,
+        isGetZoneInfoResponse
     ])(x)
 }

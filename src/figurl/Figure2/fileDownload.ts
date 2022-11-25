@@ -110,8 +110,10 @@ export type FindFileRequest = {
         hashAlg: 'sha1'
         hash: string
     }
-    fromClientId: NodeId
-    signature: Signature
+    fromClientId?: NodeId
+    signature?: Signature
+    githubUserId?: string
+    githubAccessToken?: string
 }
 
 export const isFindFileRequest = (x: any): x is FindFileRequest => {
@@ -126,7 +128,9 @@ export const isFindFileRequest = (x: any): x is FindFileRequest => {
     return validateObject(x, {
         payload: isPayload,
         fromClientId: optional(isNodeId),
-        signature: optional(isSignature)
+        signature: optional(isSignature),
+        githubUserId: optional(isString),
+        githubAccessToken: optional(isString)
     })
 }
 
@@ -160,11 +164,11 @@ const ipfsDownload = async (cid: string) => {
     return y.data
 }
 
-export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, o: {localMode: boolean, parseJson: boolean}) => {
+export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, githubAuth: {userId?: string, accessToken?: string}, o: {localMode: boolean, parseJson: boolean}) => {
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
-        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl) || {}
+        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl, githubAuth) || {}
         if (!downloadUrl) {
             throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
         }
@@ -279,7 +283,7 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     return downloadUrl
 }
 
-export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string): Promise<{url: string, size?: number} | undefined> => {
+export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken?: string}): Promise<{url: string, size?: number} | undefined> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     const url = `${kacheryGatewayUrl}/api/gateway`
     // const url = 'http://localhost:3001/api/kacherycloud'
@@ -292,8 +296,10 @@ export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGate
     const signature = await signMessage(payload, keyPair)
     const req: FindFileRequest = {
         payload,
-        fromClientId: clientId,
-        signature
+        fromClientId: !githubAuth.userId ? clientId : undefined,
+        signature: !githubAuth.userId ? signature : undefined,
+        githubUserId: githubAuth.userId,
+        githubAccessToken: githubAuth.accessToken
     }
     const x = await axios.post(url, req)
     const resp = x.data

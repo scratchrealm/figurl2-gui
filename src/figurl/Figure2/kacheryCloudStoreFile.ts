@@ -5,7 +5,7 @@ import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription';
 import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 
-const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string): Promise<string> => {
+const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken? : string}): Promise<string> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     // const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
     const url = `${kacheryGatewayUrl}/api/gateway`
@@ -24,8 +24,10 @@ const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string
         const signature = await signMessage(payload, keyPair)
         const req: InitiateFileUploadRequest = {
             payload,
-            fromClientId: clientId,
-            signature
+            fromClientId: !githubAuth.userId ? clientId : undefined,
+            signature: !githubAuth.userId ? signature : undefined,
+            githubUserId: githubAuth.userId,
+            githubAccessToken: githubAuth.accessToken
         }
         const x = await axios.post(url, req)
         const resp = x.data
@@ -70,8 +72,10 @@ const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string
     const signature2 = await signMessage(payload2, keyPair)
     const req2: FinalizeFileUploadRequest = {
         payload: payload2,
-        fromClientId: clientId,
-        signature: signature2
+        fromClientId: !githubAuth.userId ? clientId : undefined,
+        signature: !githubAuth.userId ? signature2 : undefined,
+        githubUserId: githubAuth.userId,
+        githubAccessToken: githubAuth.accessToken
     }
     const x2 = await axios.post(url, req2)
     const resp2 = x2.data
