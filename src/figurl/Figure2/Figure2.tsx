@@ -4,6 +4,7 @@ import { useLocalMode } from 'figurl/FigurlSetup';
 import { useModalDialog } from 'figurl/MainWindow/ApplicationBar/ApplicationBar';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
 import useBackendId from 'figurl/useBackendId';
+import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth';
 import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
@@ -17,6 +18,7 @@ import GitHubPermissionsWindow from './GitHubPermissionsWindow';
 import PermissionsWindow from './PermissionsWindow';
 import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
+import { UserId } from './viewInterface/kacheryTypes';
 import zenodoDownload from './zenodoDownload';
 
 type Props = {
@@ -198,6 +200,15 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             figureInterface.close()
         }
     }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl])
+
+    const {userId} = useGithubAuth()
+    useEffect(() => {
+        if (!figureInterface) return
+        figureInterface._sendMessageToChild({
+            type: 'setCurrentUser',
+            userId: userId as any as (UserId | undefined)
+        })
+    }, [figureInterface, userId])
 
     useEffect(() => {
         if (!figureInterface) return
