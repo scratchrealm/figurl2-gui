@@ -78,7 +78,7 @@ const GitHubLoginWindow: FunctionComponent<Props> = ({onClose, onChange, default
 				{onClose && <Button onClick={onClose}>OK</Button>}
 				<hr />
 				<div>
-					<Button onClick={handleClearAccessToken}>Clear access token</Button>
+					<Button onClick={handleClearAccessToken}>Log out</Button>
 				</div>
 				<br />
 				{
