@@ -17,7 +17,7 @@ type Props = {
 }
 
 const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) => {
-    const {queryString, viewUri, figureDataUri, label} = useRoute2()
+    const {queryString, viewUri, figureDataUri, label, zone} = useRoute2()
     // const {userId, googleIdToken} = useSignedIn()
     const {userId, accessToken} = useGithubAuth()
     const [editLabel, setEditLabel] = useState<string>(label || 'untitled')
@@ -39,6 +39,7 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) 
                 viewUri,
                 urlState,
                 label: editLabel,
+                zone,
                 fileManifest: figureInterface?.fileManifest() || [],
                 notes,
                 auth: {
@@ -55,7 +56,7 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) 
             }
             onClose()
         })()
-    }, [figureDataUri, editLabel, queryString, userId, accessToken, onClose, viewUri, notes, figureInterface])
+    }, [figureDataUri, editLabel, zone, queryString, userId, accessToken, onClose, viewUri, notes, figureInterface])
     return (
         <div style={{overflowY: 'auto'}}>
             <h1>Save figure</h1>
@@ -78,6 +79,10 @@ const SaveFigureDialog: FunctionComponent<Props> = ({onClose, figureInterface}) 
                     <TableRow>
                         <TableCell>User</TableCell>
                         <TableCell>{userId}</TableCell>
+                    </TableRow>
+                    <TableRow>
+                        <TableCell>Zone</TableCell>
+                        <TableCell>{zone || ''}</TableCell>
                     </TableRow>
                     <TableRow>
                         <TableCell>Notes</TableCell>
