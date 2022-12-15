@@ -277,6 +277,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
                 src={src}
                 width={width}
                 height={height}
+                frameBorder="0"
             />
             <ModalWindow
                 open={permissionsWindowVisible}
