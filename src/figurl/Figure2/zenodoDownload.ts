@@ -14,7 +14,7 @@ export const zenodoDownloadUrl = async (recordId: string, fileName: string, o: {
     return url
 }
 
-const zenodoDownload = async (recordId: string, fileName: string, onProgress: (a: {loaded: number, total: number}) => void, o: {sandbox: boolean}) => {
+const zenodoDownload = async (recordId: string, fileName: string, onProgress: (a: {loaded: number, total: number}) => void, o: {sandbox: boolean}): Promise<string> => {
     const url = await zenodoDownloadUrl(recordId, fileName, o)
     let timestampProgress = Date.now()
     let firstProgress = true
@@ -40,16 +40,7 @@ const zenodoDownload = async (recordId: string, fileName: string, onProgress: (a
             response.on('end', () => {
                 const data = Buffer.concat(chunks)
                 const txt = new TextDecoder().decode(data)
-                let ret: string
-                try {
-                    ret = JSON.parse(txt)
-                }
-                catch {
-                    console.warn(txt)
-                    reject('Problem parsing JSON')
-                    return
-                }
-                resolve(ret)
+                resolve(txt)
             })
             response.on('error', err => {
                 reject(err)

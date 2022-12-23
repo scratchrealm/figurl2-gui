@@ -11,7 +11,7 @@ import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useHistory, useLocation } from 'react-router-dom';
-import FigureInterface, { loadGitHubFileDataFromUri } from './FigureInterface';
+import FigureInterface, { isZenodoViewUrl, loadGitHubFileDataFromUri } from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
 import getZoneInfo from './getZoneInfo';
 import GitHubPermissionsWindow from './GitHubPermissionsWindow';
@@ -84,7 +84,14 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
                 const a = dataUri.split('?')[0].split('/')
                 const recordId = a[2]
                 const fileName = a.slice(3).join('/')
-                data = await zenodoDownload(recordId, fileName, reportProgress, {sandbox: dataUri.startsWith('zenodo-sandbox://')})
+                const dataJson = await zenodoDownload(recordId, fileName, reportProgress, {sandbox: dataUri.startsWith('zenodo-sandbox://')})
+                try {
+                    data = JSON.parse(dataJson)
+                }
+                catch {
+                    console.warn(dataJson)
+                    throw Error('Problem parsing JSON')
+                }
             }
             else {
                 throw Error(`Unexpected data URI: ${dataUri}`)
@@ -153,6 +160,19 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
     const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : initialGithubAuth)
     const [permissionsParams, setPermissionsParams] = useState<any>()
+    const [zenodoSrcDoc, setZenodoSrcDoc] = useState<string | undefined>()
+
+    useEffect(() => {
+        (async () => {
+            if (isZenodoViewUrl(viewUrl || '')) {
+                const a = (viewUrl || '').split('?')[0].split('/')
+                const recordId = a[2]
+                const fileName = a.slice(3).join('/')
+                const x = await zenodoDownload(recordId, fileName, () => {}, {sandbox: viewUrl?.startsWith('zenodo-sandbox://') || false})
+                setZenodoSrcDoc(x)
+            }
+        })()
+    }, [viewUrl])
 
     useEffect(() => {
         progress.onProgress(({loaded, total}) => {
@@ -177,14 +197,14 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const qs = location.search.slice(1)
     const query = useMemo(() => (QueryString.parse(qs)), [qs])
     const localMode = useLocalMode()
+    const figureId = useMemo(() => (randomAlphaString(10)), [])
     useEffect(() => {
         if (!viewUrl) return
         if (!kacheryGatewayUrl) return
-        const id = randomAlphaString(10)
         const figureInterface = new FigureInterface({
             projectId,
             backendId,
-            figureId: id,
+            figureId,
             viewUrl,
             figureDataUri,
             figureDataSize,
@@ -199,7 +219,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl])
+    }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl, figureId])
 
     const {userId} = useGithubAuth()
     useEffect(() => {
@@ -239,9 +259,13 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         figureInterface.onSetUrlState(handleSetUrlState)
     }, [figureInterface, openPermissionsWindow, openGitHubPermissionsWindow, handleSetUrlState])
 
-    const parentOrigin = window.location.protocol + '//' + window.location.host
+    const parentOrigin = isZenodoViewUrl(viewUrl || '') ? '*' : window.location.protocol + '//' + window.location.host
     let src = useMemo(() => {
         if (!figureInterface) return ''
+        if (!viewUrl) return ''
+        if (isZenodoViewUrl(viewUrl)) {
+            return undefined
+        }
         let src = `${viewUrl}?parentOrigin=${parentOrigin}&figureId=${figureInterface.figureId}`
         if (query.s) {
             src += `&s=${query.s}`
@@ -249,6 +273,27 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         return src
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [figureInterface, parentOrigin, viewUrl]) // intentionally exclude query.s from dependencies so we don't get a refresh when state changes
+
+    const setIframeElement = useCallback((e: HTMLIFrameElement | null) => {
+        iframeElement.current = e
+        if (!e) {
+            console.warn('Iframe element is null.')
+            return
+        }
+        if (isZenodoViewUrl(viewUrl || '')) {
+            const cw = e.contentWindow
+            if (!cw) {
+                console.warn('No contentWindow for iframe element')
+                return
+            }
+            cw.postMessage({
+                type: 'initializeFigure',
+                parentOrigin: '*',
+                figureId,
+                s: query.s ? query.s : undefined
+            }, '*')
+        }
+    }, [figureId, viewUrl, query.s])
 
     if (!figureData) {
         if (!figureDataUri) {
@@ -269,12 +314,16 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     if (!figureInterface) {
         return <div>Waiting for figure interface</div>
     }
+    if ((isZenodoViewUrl(viewUrl || '')) && (!zenodoSrcDoc)) {
+        return <div>Loading view source</div>
+    }
     return (
         <div style={{position: 'absolute', width, height, overflow: 'hidden'}}>
             <iframe
-                ref={e => {iframeElement.current = e}}
+                ref={e => {setIframeElement(e)}}
                 title="figure"
                 src={src}
+                srcDoc={zenodoSrcDoc}
                 width={width}
                 height={height}
                 frameBorder="0"

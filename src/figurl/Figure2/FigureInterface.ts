@@ -54,10 +54,14 @@ class FigureInterface {
             const msg = e.data
             if (isMessageToParent(msg)) {
                 if (msg.type === 'figurlRequest') {
-                    if (msg.figureId === a.figureId) {
+                    if ((msg.figureId === a.figureId) || (msg.figureId === 'undefined')) {
                         const requestId = msg.requestId
                         const request = msg.request
-                        if (!isFigurlRequest(request)) return
+                        if (!isFigurlRequest(request)) {
+                            console.warn(request)
+                            console.warn('Not a figurl request')
+                            return
+                        }
                         if (request.type === 'getFigureData') {
                             this._waitForFigureData().then(() => {
                                 const response: GetFigureDataResponse = {
@@ -259,7 +263,14 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const recordId = a[2]
                 const fileName = a.slice(3).join('/')
-                data = await zenodoDownload(recordId, fileName, onProgress, {sandbox: uri.startsWith('zenodo-sandbox://')})
+                const dataJson = await zenodoDownload(recordId, fileName, onProgress, {sandbox: uri.startsWith('zenodo-sandbox://')})
+                try {
+                    data = JSON.parse(dataJson)
+                }
+                catch {
+                    console.warn(dataJson)
+                    throw Error('Problem parsing JSON')
+                }
             }
             else {
                 throw Error(`Invalid uri: ${uri}`)
@@ -548,8 +559,13 @@ class FigureInterface {
         }
         const cw = this.a.iframeElement.current.contentWindow
         if (!cw) return
-        cw.postMessage(msg, this.a.viewUrl)
+        const targetOrigin = isZenodoViewUrl(this.a.viewUrl) ? window.location.protocol + '//' + window.location.host : this.a.viewUrl
+        cw.postMessage(msg, targetOrigin)
     }
+}
+
+export const isZenodoViewUrl = (url: string) => {
+    return url.startsWith('zenodo://') || url.startsWith('zenodo-sandbox://')
 }
 
 const jotUrl = 'https://jot.figurl.org/api/jot'
