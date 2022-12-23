@@ -275,6 +275,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     }, [figureInterface, parentOrigin, viewUrl]) // intentionally exclude query.s from dependencies so we don't get a refresh when state changes
 
     const setIframeElement = useCallback((e: HTMLIFrameElement | null) => {
+        if (iframeElement.current) return // already set
         iframeElement.current = e
         if (!e) {
             console.warn('Iframe element is null.')
