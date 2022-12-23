@@ -287,12 +287,14 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
                 console.warn('No contentWindow for iframe element')
                 return
             }
-            cw.postMessage({
-                type: 'initializeFigure',
-                parentOrigin: '*',
-                figureId,
-                s: query.s ? query.s : undefined
-            }, '*')
+            cw.onload = () => {
+                cw.postMessage({
+                    type: 'initializeFigure',
+                    parentOrigin: '*',
+                    figureId,
+                    s: query.s ? query.s : undefined
+                }, '*')
+            }
         }
     }, [figureId, viewUrl, query.s])
 
