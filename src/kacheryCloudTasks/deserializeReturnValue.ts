@@ -1,4 +1,5 @@
 import zlib from 'zlib'
+import { Buffer } from 'buffer'
 
 const deserializeReturnValue = async (x: any): Promise<any> => {
     if (!x) return x

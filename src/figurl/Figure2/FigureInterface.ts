@@ -17,6 +17,7 @@ import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from 
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 import validateObject, { isBoolean, isNumber, optional } from './viewInterface/validateObject'
 import zenodoDownload, { zenodoDownloadUrl } from './zenodoDownload'
+import { Buffer } from 'buffer'
 (window as any).figurlFileData = {}
 
 class FigureInterface {
