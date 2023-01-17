@@ -1,5 +1,5 @@
-import zlib from 'zlib'
 import { Buffer } from 'buffer'
+import pako from 'pako'
 
 const deserializeReturnValue = async (x: any): Promise<any> => {
     if (!x) return x
@@ -24,7 +24,7 @@ const deserializeReturnValue = async (x: any): Promise<any> => {
                 const data_gzip_b64 = x.data_gzip_b64 as string
                 // const aa = _base64ToArrayBuffer(data_gzip_b64)
                 const aa = Buffer.from(data_gzip_b64, 'base64')
-                dataBuffer = await gunzipAsync(aa)
+                dataBuffer = Buffer.from(await gunzipAsync(aa))
             }
             else {
                 throw Error('Missing data_b64 or data_gzip_b64')
@@ -76,16 +76,17 @@ const shapeProduct = (shape: number[]) => {
     return ret
 }
 
-const gunzipAsync = async (x: ArrayBuffer): Promise<Buffer> => {
-    return new Promise((resolve, reject) => {
-        zlib.inflate(x, (err: any, y: Buffer) => {
-            if (err) {
-                reject(err)
-                return
-            }
-            resolve(y)
-        })
-    })
+const gunzipAsync = async (x: ArrayBuffer): Promise<Uint8Array> => {
+    return pako.inflate(x)
+    // return new Promise((resolve, reject) => {
+    //     zlib.inflate(x, (err: any, y: Buffer) => {
+    //         if (err) {
+    //             reject(err)
+    //             return
+    //         }
+    //         resolve(y)
+    //     })
+    // })
 }
 
 const applyShape = (x: Float32Array | Int32Array | Int16Array | Uint8Array | Uint16Array | Uint32Array | Float64Array, shape: number[]): number[] | number[][] | number[][][] | number[][][][] | number[][][][][] => {
