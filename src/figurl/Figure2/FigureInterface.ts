@@ -41,7 +41,8 @@ class FigureInterface {
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
         taskManager?: KacheryCloudTaskManager,
         localMode: boolean,
-        kacheryGatewayUrl: string
+        kacheryGatewayUrl: string,
+        zone: string
     }) {
         if (a.figureDataUri) {
             this.#requestedFileUris.push(a.figureDataUri)
@@ -218,7 +219,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1 = a[2]
 
-                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, this.a.zone, {localMode, parseJson: (responseType !== 'text')})
             }
             else if (uri.startsWith('jot://')) {
                 const jotId = uri.split('?')[0].split('/')[2]
@@ -229,7 +230,7 @@ class FigureInterface {
                 }
                 const a = uri0.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, this.a.zone, {localMode, parseJson: (responseType !== 'text')})
             }
             else if (uri.startsWith('gh://')) {
                 const {content} = await loadGitHubFileDataFromUri(uri)
@@ -240,7 +241,7 @@ class FigureInterface {
                         const a = uri2.split('?')[0].split('/')
                         const sha1 = a[2]
 
-                        data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
+                        data = await fileDownload('sha1', sha1, this.kacheryGatewayUrl, onProgress, this.githubAuth, this.a.zone, {localMode, parseJson: (responseType !== 'text')})
                     }
                     else throw Error(`Unexpected content for .uri file ${uri} (expected a URI)`)
                 }
@@ -257,7 +258,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
 
-                data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, this.githubAuth, {localMode, parseJson: (responseType !== 'text')})
+                data = await fileDownload('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, onProgress, this.githubAuth, this.a.zone, {localMode, parseJson: (responseType !== 'text')})
             }
             else if ((uri.startsWith('zenodo://')) || (uri.startsWith('zenodo-sandbox://'))) {
                 const a = uri.split('?')[0].split('/')
@@ -319,7 +320,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1 = a[2]
 
-                const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl, this.#githubAuth) || {}
+                const {url, size} = await fileDownloadUrl('sha1', sha1, this.kacheryGatewayUrl, this.#githubAuth, this.a.zone) || {}
                 if (!url) {
                     throw Error('Unable to get file download url')
                 }
@@ -335,7 +336,7 @@ class FigureInterface {
                 const a = uri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
 
-                const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, this.githubAuth) || {}
+                const {url, size} = await fileDownloadUrl('sha1-enc', sha1_enc_path, this.kacheryGatewayUrl, this.githubAuth, this.a.zone) || {}
                 if (!url) {
                     throw Error('Unable to get file download url')
                 }
@@ -456,7 +457,7 @@ class FigureInterface {
         }
         
         let {fileData} = request
-        let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl, this.githubAuth)
+        let uri = await kacheryCloudStoreFile(fileData, this.kacheryGatewayUrl, this.githubAuth, this.a.zone)
         if (!uri) throw Error('Error storing file')
         if (request.jotId) {
             if ((!this.#githubAuth.userId) || (!this.#githubAuth.accessToken)) {

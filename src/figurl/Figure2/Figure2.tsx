@@ -10,7 +10,7 @@ import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryClo
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useHistory, useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import FigureInterface, { isZenodoViewUrl, loadGitHubFileDataFromUri } from './FigureInterface';
 import ipfsDownload, { fileDownload } from './fileDownload';
 import getZoneInfo from './getZoneInfo';
@@ -34,7 +34,7 @@ type Progress = {
 // this is important, because the effect might get called multiple times
 const figureDataCache: {[dataUri: string]: any} = {}
 
-export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined, githubAuth?: {userId?: string, accessToken?: string}) => {
+export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: string | undefined, githubAuth: {userId?: string, accessToken?: string}, zone: string) => {
     const [figureData, setFigureData] = useState<any>()
     const [figureDataSize, setFigureDataSize] = useState<number | undefined>()
     const {progress, reportProgress} = useMemo(() => {
@@ -69,12 +69,12 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
             else if (dataUri.startsWith('sha1://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1 = a[2]
-                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, githubAuth || {}, {localMode, parseJson: true})
+                data = await fileDownload('sha1', sha1, kacheryGatewayUrl, reportProgress, githubAuth || {}, zone, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('sha1-enc://')) {
                 const a = dataUri.split('?')[0].split('/')
                 const sha1_enc_path = a[2]
-                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, githubAuth || {}, {localMode, parseJson: true})
+                data = await fileDownload('sha1-enc', sha1_enc_path, kacheryGatewayUrl, reportProgress, githubAuth || {}, zone, {localMode, parseJson: true})
             }
             else if (dataUri.startsWith('gh://')) {
                 const {content} = await loadGitHubFileDataFromUri(dataUri)
@@ -100,14 +100,14 @@ export const useFigureData = (dataUri: string | undefined, kacheryGatewayUrl: st
             figureDataCache[dataUri] = data
             setFigureData(data)
         })()
-    }, [dataUri, reportProgress, localMode, kacheryGatewayUrl, githubAuth])
+    }, [dataUri, reportProgress, localMode, kacheryGatewayUrl, githubAuth, zone])
     return {figureData, progress, figureDataUri: dataUri, figureDataSize}
 }
 
 export const useRoute2 = () => {
     const url = window.location.href
     const location = useLocation()
-    const history = useHistory()
+    const navigate = useNavigate()
 
     const p = location.pathname
     const routePath: RoutePath = isRoutePath(p) ? p : '/home'
@@ -141,8 +141,8 @@ export const useRoute2 = () => {
         }
         if (o.projectId !== undefined) query2.project = o.projectId
         const search2 = queryString(query2)
-        history.push({...location, pathname: pathname2, search: search2})
-    }, [location, history])
+        navigate({...location, pathname: pathname2, search: search2})
+    }, [location, navigate])
 
     return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label, zone}
 }
@@ -158,7 +158,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
     const {visible: githubPermissionsWindowVisible, handleOpen: openGitHubPermissionsWindow, handleClose: closeGitHubPermissionsWindow} = useModalDialog()
     const [kacheryGatewayUrl, setKacheryGatewayUrl] = useState<string | undefined>()
-    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : initialGithubAuth)
+    const {figureData, progress, figureDataSize} = useFigureData(figureDataUri, kacheryGatewayUrl, figureInterface ? figureInterface.githubAuth : initialGithubAuth, zone || 'default')
     const [permissionsParams, setPermissionsParams] = useState<any>()
     const [zenodoSrcDoc, setZenodoSrcDoc] = useState<string | undefined>()
 
@@ -185,6 +185,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
                 if (!resp.found) {
                     throw Error(`Unrecognized zone: ${zone}`)
                 }
+                console.log(`--- setting kachery gateway url: ${resp.kacheryGatewayUrl}`)
                 setKacheryGatewayUrl(resp.kacheryGatewayUrl)
             })
         }
@@ -193,7 +194,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         }
     }, [zone])
     const location = useLocation()
-    const history = useHistory()
+    const navigate = useNavigate()
     const qs = location.search.slice(1)
     const query = useMemo(() => (QueryString.parse(qs)), [qs])
     const localMode = useLocalMode()
@@ -211,7 +212,8 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             iframeElement,
             taskManager,
             localMode,
-            kacheryGatewayUrl
+            kacheryGatewayUrl,
+            zone: zone || 'default'
         })
         setFigureInterfaceInternal(figureInterface)
         setFigureInterface(figureInterface)
@@ -219,7 +221,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl, figureId])
+    }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl, figureId, zone])
 
     const {userId} = useGithubAuth()
     useEffect(() => {
@@ -241,8 +243,8 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
             ...location,
             search: adjustQueryStringForState(location.search, state)
         }
-        history.push(newLocation)
-    }, [location, history])
+        navigate(newLocation)
+    }, [location, navigate])
 
     useEffect(() => {
         if (!figureInterface) return

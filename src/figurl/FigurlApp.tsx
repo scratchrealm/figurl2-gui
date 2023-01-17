@@ -1,10 +1,8 @@
 import { MuiThemeProvider } from '@material-ui/core';
 import { testSignatures } from 'commonInterface/crypto/signatures';
-import GoogleSignInSetup from 'components/googleSignIn/GoogleSignInSetup';
 import Hyperlink from 'components/Hyperlink/Hyperlink';
 import GithubAuthSetup from 'GithubAuth/GithubAuthSetup';
 import { FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
-import { BrowserRouter } from 'react-router-dom';
 import './App.css';
 import FigurlSetup from './FigurlSetup';
 import './index.css';
@@ -12,6 +10,7 @@ import MainWindow from './MainWindow/MainWindow';
 import useWindowDimensions from './MainWindow/useWindowDimensions';
 // import logo from './logo.svg';
 import theme from './theme';
+import { BrowserRouter } from 'react-router-dom';
 
 testSignatures()
 
@@ -82,18 +81,16 @@ const FigurlApp: FunctionComponent<Props> = ({
     <div className="App">
       <MuiThemeProvider theme={theme}>
         <BrowserRouter>
-          <GoogleSignInSetup>
-            <GithubAuthSetup>
-              <FigurlSetup localMode={localMode}>
-                <MainWindow
-                  packageName={packageName}
-                  logo={logo}
-                  homePageProps={homePageProps}
-                  hide={hide}
-                />
-              </FigurlSetup>
-            </GithubAuthSetup>
-          </GoogleSignInSetup>
+          <GithubAuthSetup>
+            <FigurlSetup localMode={localMode}>
+              <MainWindow
+                packageName={packageName}
+                logo={logo}
+                homePageProps={homePageProps}
+                hide={hide}
+              />
+            </FigurlSetup>
+          </GithubAuthSetup>
         </BrowserRouter>
       </MuiThemeProvider>
     </div>

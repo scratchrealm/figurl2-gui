@@ -5,7 +5,7 @@ import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription';
 import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 
-const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken? : string}): Promise<string> => {
+const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken? : string}, zone: string): Promise<string> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     // const url = 'https://cloud.kacheryhub.org/api/kacherycloud'
     const url = `${kacheryGatewayUrl}/api/gateway`
@@ -19,7 +19,8 @@ const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string
             timestamp: Date.now(),
             hashAlg: 'sha1' as 'sha1',
             hash: sha1.toString(),
-            size: fileData.length
+            size: fileData.length,
+            zone
         }
         const signature = await signMessage(payload, keyPair)
         const req: InitiateFileUploadRequest = {

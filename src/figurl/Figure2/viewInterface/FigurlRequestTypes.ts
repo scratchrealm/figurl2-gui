@@ -30,14 +30,14 @@ export const isGetFigureDataResponse = (x: any): x is GetFigureDataResponse => {
 export type GetFileDataRequest = {
     type: 'getFileData'
     uri: string
-    responseType?: string // 'text', 'json', 'json-deserialized': default is 'json-deserialized'
+    responseType?: 'text' | 'json' | 'json-deserialized' // 'text', 'json', 'json-deserialized': default is 'json-deserialized'
 }
 
 export const isGetFileDataRequest = (x: any): x is GetFileDataRequest => {
     return validateObject(x, {
         type: isEqualTo('getFileData'),
         uri: optional(isString),
-        responseType: optional(isString)
+        responseType: optional(isOneOf(['text', 'json', 'json-deserialized'].map(a => (isEqualTo(a)))))
     })
 }
 

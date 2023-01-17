@@ -1,7 +1,7 @@
-import { IconButton, Modal } from '@material-ui/core';
+import { Dialog, IconButton } from '@material-ui/core';
 import { makeStyles } from '@material-ui/core/styles';
 import { Close } from '@material-ui/icons';
-import React, { FunctionComponent } from 'react';
+import { FunctionComponent, PropsWithChildren } from 'react';
 
 const useStyles = makeStyles((theme) => ({
     paper: {
@@ -23,10 +23,11 @@ type Props = {
     onClose?: () => void
 }
 
-const ModalWindow: FunctionComponent<Props> = ({ onClose, open, children }) => {
+const ModalWindow: FunctionComponent<PropsWithChildren<Props>> = ({ onClose, open, children }) => {
     const classes = useStyles();
     return (
-        <Modal
+        <Dialog
+            fullScreen
             open={open}
             onClose={onClose}
             style={{zIndex: 9999}}
@@ -39,7 +40,7 @@ const ModalWindow: FunctionComponent<Props> = ({ onClose, open, children }) => {
                     children
                 }
             </div>
-        </Modal>
+        </Dialog>
     )
 }
 

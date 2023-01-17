@@ -3,9 +3,9 @@ import { signMessage } from 'commonInterface/crypto/signatures';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
 import * as crypto from 'crypto';
 import * as http from 'http';
+import { FindFileRequest, isFindFileResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 import loadLocalSha1TextFile from './loadLocalSha1TextFile';
-import validateObject, { isOneOf } from './viewInterface/validateObject';
 
 export type FindIpfsFileRequest = {
     payload: {
@@ -103,72 +103,17 @@ export const isFindIpfsFileResponse = (x: any): x is FindIpfsFileResponse => {
 //     })
 // }
 
-export type FindFileRequest = {
-    payload: {
-        type: 'findFile'
-        timestamp: number
-        hashAlg: 'sha1'
-        hash: string
-    }
-    fromClientId?: NodeId
-    signature?: Signature
-    githubUserId?: string
-    githubAccessToken?: string
-}
-
-export const isFindFileRequest = (x: any): x is FindFileRequest => {
-    const isPayload = (y: any) => {
-        return validateObject(y, {
-            type: isEqualTo('findFile'),
-            timestamp: isNumber,
-            hashAlg: isOneOf([isEqualTo('sha1')]),
-            hash: isString
-        })
-    }
-    return validateObject(x, {
-        payload: isPayload,
-        fromClientId: optional(isNodeId),
-        signature: optional(isSignature),
-        githubUserId: optional(isString),
-        githubAccessToken: optional(isString)
-    })
-}
-
-export type FindFileResponse = {
-    type: 'findFile'
-    found: boolean
-    size?: number
-    url?: string
-    bucketUri?: string
-    objectKey?: string
-    cacheHit?: boolean
-    fallback?: boolean
-}
-
-export const isFindFileResponse = (x: any): x is FindFileResponse => {
-    return validateObject(x, {
-        type: isEqualTo('findFile'),
-        found: isBoolean,
-        size: optional(isNumber),
-        url: optional(isString),
-        bucketUri: optional(isString),
-        objectKey: optional(isString),
-        cacheHit: optional(isBoolean),
-        fallback: optional(isBoolean)
-    })
-}
-
 const ipfsDownload = async (cid: string) => {
     const downloadUrl = await ipfsDownloadUrl(cid)
     const y = await axios.get(downloadUrl, {responseType: 'json'})
     return y.data
 }
 
-export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, githubAuth: {userId?: string, accessToken?: string}, o: {localMode: boolean, parseJson: boolean}) => {
+export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, githubAuth: {userId?: string, accessToken?: string}, zone: string, o: {localMode: boolean, parseJson: boolean}) => {
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
-        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl, githubAuth) || {}
+        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl, githubAuth, zone) || {}
         if (!downloadUrl) {
             throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
         }
@@ -283,7 +228,7 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     return downloadUrl
 }
 
-export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken?: string}): Promise<{url: string, size?: number} | undefined> => {
+export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken?: string}, zone: string): Promise<{url: string, size?: number} | undefined> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     const url = `${kacheryGatewayUrl}/api/gateway`
     // const url = 'http://localhost:3001/api/kacherycloud'
@@ -291,7 +236,8 @@ export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGate
         type: 'findFile' as 'findFile',
         timestamp: Date.now(),
         hashAlg: hashAlg as 'sha1',
-        hash
+        hash,
+        zone
     }
     const signature = await signMessage(payload, keyPair)
     const req: FindFileRequest = {
