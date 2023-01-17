@@ -29,11 +29,14 @@
     "react-dom": "^17.0.2",
     "react-markdown": "^4.3.1",
     "react-router-dom": "^6.6.2",
-    "react-scripts": "4.0.3",
+    "react-scripts": "^5.0.1",
     "react-syntax-highlighter": "^15.4.5",
     "typescript": "^4.1.2",
     "web-vitals": "^1.0.1",
-    "winston": "^3.3.3"
+    "winston": "^3.3.3",
+    "assert": "npm:assert-browserify",
+    "crypto": "npm:crypto-browserify",
+    "stream": "npm:stream-browserify"
   },
   "scripts": {
     "start": "BROWSER=none react-scripts start",
