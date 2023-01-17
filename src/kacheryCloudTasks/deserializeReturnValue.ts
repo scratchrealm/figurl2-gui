@@ -77,7 +77,7 @@ const shapeProduct = (shape: number[]) => {
 
 const gunzipAsync = async (x: ArrayBuffer): Promise<Buffer> => {
     return new Promise((resolve, reject) => {
-        zlib.inflate(x, (err, y) => {
+        zlib.inflate(x, (err: any, y: Buffer) => {
             if (err) {
                 reject(err)
                 return

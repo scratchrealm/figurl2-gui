@@ -8,7 +8,6 @@ import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth';
 import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
 import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
-import QueryString from 'querystring';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FigureInterface, { isZenodoViewUrl, loadGitHubFileDataFromUri } from './FigureInterface';
@@ -20,6 +19,7 @@ import ProgressComponent from './ProgressComponent';
 import urlFromUri from './urlFromUri';
 import { UserId } from './viewInterface/kacheryTypes';
 import zenodoDownload from './zenodoDownload';
+import QueryString from 'querystring'
 
 type Props = {
     width: number
