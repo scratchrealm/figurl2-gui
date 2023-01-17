@@ -2,10 +2,10 @@ import axios from 'axios';
 import { signMessage } from 'commonInterface/crypto/signatures';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
 import * as crypto from 'crypto';
-import * as http from 'http';
 import { FindFileRequest, isFindFileResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 import loadLocalSha1TextFile from './loadLocalSha1TextFile';
+import { Buffer } from 'buffer';
 
 export type FindIpfsFileRequest = {
     payload: {
@@ -123,57 +123,107 @@ export const fileDownload = async (hashAlg: string, hash: string, kacheryGateway
         let timestampProgress = Date.now()
         let firstProgress = true
 
-        // having trouble with axios and streams (doesn't want to return a stream even when returnType='stream')
-        return new Promise((resolve, reject) => {
-            http.get(downloadUrl, response => {
-                const chunks: Uint8Array[] = []
-                const shasum = crypto.createHash('sha1')
-                let numBytesDownloaded = 0
+        const rrr = await fetch(downloadUrl)
+        if (!rrr.body) throw Error('No body in response.')
+
+        const reader = rrr.body.getReader()
+        const total = parseInt(rrr.headers.get('Content-Length') || '0')
+
+        const shasum = crypto.createHash('sha1')
+        const chunks: Uint8Array[] = []
+        let numBytesDownloaded = 0
+        while(true) {
+            const {done, value: chunk} = await reader.read()
+            if (done) {
+                break
+            }
+            numBytesDownloaded += chunk.byteLength
+            shasum.update(chunk)
+            chunks.push(chunk)
+            if (onProgress) {
+                const loaded = numBytesDownloaded
+                const elapsedSec = (Date.now() - timestampProgress) / 1000
+                if ((elapsedSec >= 0.5) || (firstProgress)) {
+                    onProgress({loaded, total})
+                    timestampProgress = Date.now()
+                    firstProgress = false
+                }
+            }
+        }
+        const computedSha1 = shasum.digest('hex')
+        if (hashAlg === 'sha1') {
+            if (computedSha1 !== hash) {
+                throw Error(`Invalid sha1 of downloaded file: ${computedSha1} <> ${hash}`)
+            }
+        }
+        const data = Buffer.concat(chunks)
+        const txt = new TextDecoder().decode(data)
+        if (o.parseJson) {
+            let ret: string
+            try {
+                ret = JSON.parse(txt)
+            }
+            catch {
+                console.warn(txt)
+                throw Error('Problem parsing JSON')
+            }
+            return ret
+        }
+        else return txt
+
+        // having problem with http and CORS - switching to fetch
+
+        // // having trouble with axios and streams (doesn't want to return a stream even when returnType='stream')
+        // return new Promise((resolve, reject) => {
+        //     http.get(downloadUrl, response => {
+        //         const chunks: Uint8Array[] = []
+        //         const shasum = crypto.createHash('sha1')
+        //         let numBytesDownloaded = 0
                 
-                response.on('data', (chunk: Uint8Array) => {
-                    numBytesDownloaded += chunk.byteLength
-                    shasum.update(chunk)
-                    chunks.push(chunk)
-                    if (onProgress) {
-                        const loaded = numBytesDownloaded
-                        const total = parseInt(response.headers['content-length'] || '0')
-                        const elapsedSec = (Date.now() - timestampProgress) / 1000
-                        if ((elapsedSec >= 0.5) || (firstProgress)) {
-                            onProgress({loaded, total})
-                            timestampProgress = Date.now()
-                            firstProgress = false
-                        }
-                    }
-                })
-                response.on('end', () => {
-                    const computedSha1 = shasum.digest('hex')
-                    if (hashAlg === 'sha1') {
-                        if (computedSha1 !== hash) {
-                            reject(`Invalid sha1 of downloaded file: ${computedSha1} <> ${hash}`)
-                            return
-                        }
-                    }
-                    const data = Buffer.concat(chunks)
-                    const txt = new TextDecoder().decode(data)
-                    if (o.parseJson) {
-                        let ret: string
-                        try {
-                            ret = JSON.parse(txt)
-                        }
-                        catch {
-                            console.warn(txt)
-                            reject('Problem parsing JSON')
-                            return
-                        }
-                        resolve(ret)
-                    }
-                    else resolve(txt)
-                })
-                response.on('error', err => {
-                    reject(err)
-                })
-            })
-        })
+        //         response.on('data', (chunk: Uint8Array) => {
+        //             numBytesDownloaded += chunk.byteLength
+        //             shasum.update(chunk)
+        //             chunks.push(chunk)
+        //             if (onProgress) {
+        //                 const loaded = numBytesDownloaded
+        //                 const total = parseInt(response.headers['content-length'] || '0')
+        //                 const elapsedSec = (Date.now() - timestampProgress) / 1000
+        //                 if ((elapsedSec >= 0.5) || (firstProgress)) {
+        //                     onProgress({loaded, total})
+        //                     timestampProgress = Date.now()
+        //                     firstProgress = false
+        //                 }
+        //             }
+        //         })
+        //         response.on('end', () => {
+        //             const computedSha1 = shasum.digest('hex')
+        //             if (hashAlg === 'sha1') {
+        //                 if (computedSha1 !== hash) {
+        //                     reject(`Invalid sha1 of downloaded file: ${computedSha1} <> ${hash}`)
+        //                     return
+        //                 }
+        //             }
+        //             const data = Buffer.concat(chunks)
+        //             const txt = new TextDecoder().decode(data)
+        //             if (o.parseJson) {
+        //                 let ret: string
+        //                 try {
+        //                     ret = JSON.parse(txt)
+        //                 }
+        //                 catch {
+        //                     console.warn(txt)
+        //                     reject('Problem parsing JSON')
+        //                     return
+        //                 }
+        //                 resolve(ret)
+        //             }
+        //             else resolve(txt)
+        //         })
+        //         response.on('error', err => {
+        //             reject(err)
+        //         })
+        //     })
+        // })
 
         // see comment above about axios
         // const y = await axios.get(downloadUrl, {

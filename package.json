@@ -24,7 +24,6 @@
     "crypto": "npm:crypto-browserify",
     "file-saver": "^2.0.5",
     "github-markdown-css": "^5.0.0",
-    "http": "npm:http-browserify",
     "idb-keyval": "^6.2.0",
     "octokit": "^2.0.10",
     "original-fs": "^1.1.0",
