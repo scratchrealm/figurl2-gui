@@ -2,9 +2,7 @@ import FigurlApp from 'figurl/FigurlApp';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import logo from './logo.png';
-import packageName from './packageName';
 import reportWebVitals from './reportWebVitals';
-import { pythonProjectVersion, webAppProjectVersion } from './version';
 
 // async function test1() {
 //   const resp = await axios.get(`http://localhost:20431/probe`, {responseType: 'text'})
@@ -32,9 +30,6 @@ ReactDOM.render(
   (
   // <React.StrictMode>
     <FigurlApp
-      packageName={packageName}
-      pythonProjectVersion={pythonProjectVersion}
-      webAppProjectVersion={webAppProjectVersion}
       logo={logo}
       hide={hide}
       localMode={local ? true : false}

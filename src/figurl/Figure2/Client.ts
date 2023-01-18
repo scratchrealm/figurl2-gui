@@ -1,4 +1,4 @@
-import { isNodeId, isNumber, isString, isUserId, NodeId, optional, UserId, _validateObject } from "../commonInterface/kacheryTypes"
+import { isNodeId, isNumber, isString, isUserId, NodeId, optional, UserId, _validateObject } from "../../commonInterface/kacheryTypes"
 
 export type Client = {
     clientId: NodeId

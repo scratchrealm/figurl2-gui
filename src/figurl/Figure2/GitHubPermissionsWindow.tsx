@@ -1,9 +1,9 @@
 import { Button } from "@material-ui/core";
 import { useGithubAuth } from "GithubAuth/useGithubAuth";
-import { sleepMsec } from "kacheryCloudTasks/PubsubSubscription";
 import { FunctionComponent, useEffect } from "react";
 import GitHubLoginWindow from '../MainWindow/GitHub/GitHubLoginWindow';
 import FigureInterface from "./FigureInterface";
+import sleepMsec from "./sleepMsec";
 
 type Props = {
     figureInterface: FigureInterface

@@ -1,4 +1,4 @@
-import { Client, isClient } from "types/Client"
+import { Client, isClient } from "./Client"
 import { isResource, Resource } from "./Resource"
 import { isNodeId, isSignature, NodeId, Signature } from "./viewInterface/kacheryTypes"
 import validateObject, { isBoolean, isEqualTo, isNumber, isOneOf, isString, optional } from "./viewInterface/validateObject"

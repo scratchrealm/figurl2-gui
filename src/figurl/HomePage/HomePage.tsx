@@ -6,13 +6,9 @@ import './localStyles.css'
 import SavedFiguresTable from './SavedFiguresTable'
 
 export type HomePageProps = {
-    packageName: string
-    pythonProjectVersion: string
-    webAppProjectVersion: string
 }
 
-const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectVersion, webAppProjectVersion}) => {
-    // const {signedIn} = useSignedIn()
+const HomePage: FunctionComponent<HomePageProps> = () => {
     const {signedIn} = useGithubAuth()
 
     return (
@@ -30,7 +26,6 @@ const HomePage: FunctionComponent<HomePageProps> = ({packageName, pythonProjectV
 
             <span>
                 <hr />
-                <p style={{fontFamily: 'courier', color: 'gray'}}>Figurl web application version: {webAppProjectVersion}</p>
             </span>
         </div>
     )

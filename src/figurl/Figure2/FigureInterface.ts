@@ -1,29 +1,21 @@
 import axios, { AxiosResponse } from 'axios'
+import { Buffer } from 'buffer'
 import { isString, JSONStringifyDeterministic } from 'commonInterface/kacheryTypes'
 import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth'
-import KacheryCloudFeed from 'kacheryCloudFeeds/KacheryCloudFeed'
-import kacheryCloudFeedManager from 'kacheryCloudFeeds/kacheryCloudFeedManager'
-import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue'
-import KacheryCloudTaskManager from 'kacheryCloudTasks/KacheryCloudTaskManager'
-import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription'
-import TaskJob from 'kacheryCloudTasks/TaskJob'
 import { Octokit } from 'octokit'
 import { MutableRefObject } from "react"
+import deserializeReturnValue from './deserializeReturnValue'
 import ipfsDownload, { fileDownload, fileDownloadUrl, ipfsDownloadUrl } from './fileDownload'
-import kacheryCloudGetMutable from './kacheryCloudGetMutable'
 import kacheryCloudStoreFile from './kacheryCloudStoreFile'
-import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, GetMutableRequest, GetMutableResponse, InitiateTaskRequest, InitiateTaskResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, StoreGithubFileRequest as StoreGithubFileRequestFigurl, StoreGithubFileResponse as StoreGithubFileResponseFigurl, SubscribeToFeedRequest, SubscribeToFeedResponse } from "./viewInterface/FigurlRequestTypes"
-import { MessageToChild, NewFeedMessagesMessage, TaskStatusUpdateMessage } from "./viewInterface/MessageToChildTypes"
+import sleepMsec from './sleepMsec'
+import { GetFigureDataResponse, GetFileDataRequest, GetFileDataResponse, GetFileDataUrlRequest, GetFileDataUrlResponse, isFigurlRequest, SetUrlStateRequest, SetUrlStateResponse, StoreFileRequest, StoreFileResponse, StoreGithubFileRequest as StoreGithubFileRequestFigurl, StoreGithubFileResponse as StoreGithubFileResponseFigurl } from "./viewInterface/FigurlRequestTypes"
+import { MessageToChild } from "./viewInterface/MessageToChildTypes"
 import { isMessageToParent } from "./viewInterface/MessageToParentTypes"
 import validateObject, { isBoolean, isNumber, optional } from './viewInterface/validateObject'
 import zenodoDownload, { zenodoDownloadUrl } from './zenodoDownload'
-import { Buffer } from 'buffer'
 (window as any).figurlFileData = {}
 
 class FigureInterface {
-    #taskManager: KacheryCloudTaskManager | undefined
-    #taskJobs: {[key: string]: TaskJob<any>} = {}
-    #feeds: {[key: string]: KacheryCloudFeed} = {}
     #closed = false
     #onRequestPermissionsCallback = (purpose: 'store-file' | 'store-github-file', params: any) => {}
     #onSetUrlStateCallback = (state: {[key: string]: any}) => {}
@@ -33,14 +25,11 @@ class FigureInterface {
     #githubAuth: {userId?: string, accessToken?: string} = initialGithubAuth
     #figureData: any | undefined = undefined
     constructor(private a: {
-        projectId: string | undefined,
-        backendId: string | null,
         figureId: string,
         viewUrl: string,
         figureDataUri?: string,
         figureDataSize?: number,
         iframeElement: MutableRefObject<HTMLIFrameElement | null | undefined>,
-        taskManager?: KacheryCloudTaskManager,
         localMode: boolean,
         kacheryGatewayUrl: string,
         zone: string
@@ -50,7 +39,6 @@ class FigureInterface {
             this.#requestedFiles[a.figureDataUri] = {size: a.figureDataSize, name: 'root'}
         }
 
-        this.#taskManager = a.taskManager
         window.addEventListener('message', e => {
             if (this.#closed) return
             const msg = e.data
@@ -88,33 +76,6 @@ class FigureInterface {
                         }
                         else if (request.type === 'getFileDataUrl') {
                             this.handleGetFileDataUrlRequest(request).then(response => {
-                                this._sendMessageToChild({
-                                    type: 'figurlResponse',
-                                    requestId,
-                                    response
-                                })
-                            })
-                        }
-                        else if (request.type === 'initiateTask') {
-                            this.handleInitiateTaskRequest(request).then(response => {
-                                this._sendMessageToChild({
-                                    type: 'figurlResponse',
-                                    requestId,
-                                    response
-                                })
-                            })
-                        }
-                        else if (request.type === 'subscribeToFeed') {
-                            this.handleSubscribeToFeedRequest(request).then(response => {
-                                this._sendMessageToChild({
-                                    type: 'figurlResponse',
-                                    requestId,
-                                    response
-                                })
-                            })
-                        }
-                        else if (request.type === 'getMutable') {
-                            this.handleGetMutableRequest(request).then(response => {
                                 this._sendMessageToChild({
                                     type: 'figurlResponse',
                                     requestId,
@@ -370,73 +331,6 @@ class FigureInterface {
                 type: 'getFileDataUrl',
                 errorMessage: err.message
             }
-        }
-    }
-    async handleInitiateTaskRequest(request: InitiateTaskRequest): Promise<InitiateTaskResponse> {
-        if (!this.a.projectId) {
-            throw Error('projectId cannot be empty for initiating a task request')
-        }
-        if (!this.#taskManager) {
-            throw Error('not taskManager when initiating a task request')
-        }
-        const taskJob = this.#taskManager.runTask({taskType: request.taskType, taskName: request.taskName, taskInput: request.taskInput})
-        if (!taskJob) throw Error('Unexpected: undefined task job')
-        if (taskJob !== this.#taskJobs[taskJob.taskJobId.toString()]) {
-            this.#taskJobs[taskJob.taskJobId.toString()] = taskJob
-            const updateStatus = () => {
-                const msg: TaskStatusUpdateMessage = {
-                    type: 'taskStatusUpdate',
-                    taskJobId: taskJob.taskJobId.toString(),
-                    status: taskJob.status,
-                    errorMessage: taskJob.errorMessage,
-                    returnValue: taskJob.result
-                }
-                this._sendMessageToChild(msg)
-            }
-            taskJob.onStarted(updateStatus)
-            taskJob.onFinished(updateStatus)
-            taskJob.onError(updateStatus)
-        }
-        const response: InitiateTaskResponse = {
-            type: 'initiateTask',
-            taskJobId: taskJob.taskJobId.toString(),
-            status: taskJob.status,
-            errorMessage: taskJob.errorMessage,
-            returnValue: taskJob.result,
-            returnValueUrl: await taskJob.getReturnValueUrl()
-        }
-        return response
-    }
-    async handleSubscribeToFeedRequest(request: SubscribeToFeedRequest): Promise<SubscribeToFeedResponse> {
-        const feed = kacheryCloudFeedManager.getFeed(request.feedId)
-        if (!(request.feedId in this.#feeds)) {
-            this.#feeds[request.feedId] = feed
-            feed.onMessagesUpdated((startMessageNumber, messages) => {
-                if (messages.length === 0) return
-                const msg: NewFeedMessagesMessage = {
-                    type: 'newFeedMessages',
-                    feedId: request.feedId,
-                    position: startMessageNumber,
-                    messages: messages
-                }
-                this._sendMessageToChild(msg)
-            })
-        }
-        const response: SubscribeToFeedResponse = {
-            type: 'subscribeToFeed',
-            messages: feed.getMessages()
-        }
-        return response
-    }
-    async handleGetMutableRequest(request: GetMutableRequest): Promise<GetMutableResponse> {
-        if (!this.a.projectId) {
-            throw Error('projectId cannot be empty for get mutable')
-        }
-        let {key} = request
-        const value = await kacheryCloudGetMutable(key, this.a.projectId)
-        return {
-            type: 'getMutable',
-            value: value !== undefined ? value : null
         }
     }
     async verifyPermissions(purpose: 'store-file' | 'store-github-file', params: any) {

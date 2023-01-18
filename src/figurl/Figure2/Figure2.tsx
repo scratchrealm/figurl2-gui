@@ -3,11 +3,8 @@ import ModalWindow from 'components/ModalWindow/ModalWindow';
 import { useLocalMode } from 'figurl/FigurlSetup';
 import { useModalDialog } from 'figurl/MainWindow/ApplicationBar/ApplicationBar';
 import RoutePath, { isRoutePath } from 'figurl/MainWindow/RoutePath';
-import useBackendId from 'figurl/useBackendId';
 import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { initialGithubAuth } from 'GithubAuth/useSetupGithubAuth';
-import { useKacheryCloudTaskManager } from 'kacheryCloudTasks/context/KacheryCloudTaskManagerContext';
-import deserializeReturnValue from 'kacheryCloudTasks/deserializeReturnValue';
 import { FunctionComponent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import FigureInterface, { isZenodoViewUrl, loadGitHubFileDataFromUri } from './FigureInterface';
@@ -20,6 +17,7 @@ import urlFromUri from './urlFromUri';
 import { UserId } from './viewInterface/kacheryTypes';
 import zenodoDownload from './zenodoDownload';
 import QueryString from 'querystring'
+import deserializeReturnValue from './deserializeReturnValue';
 
 type Props = {
     width: number
@@ -123,12 +121,10 @@ export const useRoute2 = () => {
         viewUrl = viewUrlBase + '/index.html'
     }
     const figureDataUri = query.d ? query.d as string : undefined
-    const projectId = query.project ? query.project as string : undefined
-    const backendId = query.backend ? query.backend as string : undefined
     const label = query.label ? query.label as any as string : ''
     const zone: string | undefined = query.zone ? query.zone as any as string : undefined
 
-    const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, projectId?: string, label?: string}) => {
+    const setRoute = useCallback((o: {routePath?: RoutePath, dataUri?: string, label?: string}) => {
         // const query2 = {...query}
         const query2: {[key: string]: string} = {}
         let pathname2 = location.pathname
@@ -139,21 +135,17 @@ export const useRoute2 = () => {
         if (o.label) {
             query2.label = o.label
         }
-        if (o.projectId !== undefined) query2.project = o.projectId
         const search2 = queryString(query2)
         navigate({...location, pathname: pathname2, search: search2})
     }, [location, navigate])
 
-    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, projectId, backendId, label, zone}
+    return {url, routePath, setRoute, queryString: qs, viewUri, viewUrl, viewUrlBase, figureDataUri, label, zone}
 }
 
 const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) => {
-    const {viewUrl, figureDataUri, projectId, zone} = useRoute2()
-    const {backendIdForProject} = useBackendId()
-    const backendId = projectId ? backendIdForProject(projectId) : null
+    const {viewUrl, figureDataUri, zone} = useRoute2()
     const [figureInterface, setFigureInterfaceInternal] = useState<FigureInterface | undefined>()
     const iframeElement = useRef<HTMLIFrameElement | null>()
-    const taskManager = useKacheryCloudTaskManager()
     const [progressValue, setProgressValue] = useState<{loaded: number, total: number} | undefined>(undefined)
     const {visible: permissionsWindowVisible, handleOpen: openPermissionsWindow, handleClose: closePermissionsWindow} = useModalDialog()
     const {visible: githubPermissionsWindowVisible, handleOpen: openGitHubPermissionsWindow, handleClose: closeGitHubPermissionsWindow} = useModalDialog()
@@ -203,14 +195,11 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         if (!viewUrl) return
         if (!kacheryGatewayUrl) return
         const figureInterface = new FigureInterface({
-            projectId,
-            backendId,
             figureId,
             viewUrl,
             figureDataUri,
             figureDataSize,
             iframeElement,
-            taskManager,
             localMode,
             kacheryGatewayUrl,
             zone: zone || 'default'
@@ -221,7 +210,7 @@ const Figure2: FunctionComponent<Props> = ({width, height, setFigureInterface}) 
         return () => {
             figureInterface.close()
         }
-    }, [viewUrl, projectId, backendId, taskManager, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl, figureId, zone])
+    }, [viewUrl, localMode, setFigureInterface, figureDataSize, figureDataUri, kacheryGatewayUrl, figureId, zone])
 
     const {userId} = useGithubAuth()
     useEffect(() => {

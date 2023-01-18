@@ -15,9 +15,6 @@ import { BrowserRouter } from 'react-router-dom';
 testSignatures()
 
 type Props = {
-  packageName: string
-  pythonProjectVersion: string
-  webAppProjectVersion: string
   logo: any
   hide: number
   localMode: boolean
@@ -43,12 +40,11 @@ const useIsMobile = () => {
 }
 
 const FigurlApp: FunctionComponent<Props> = ({
-  packageName, pythonProjectVersion, webAppProjectVersion, logo, hide, localMode
+  logo, hide, localMode
 }) => {
   const {width, height} = useWindowDimensions()
   const homePageProps = useMemo(() => ({
-    packageName, pythonProjectVersion, webAppProjectVersion
-  }), [packageName, pythonProjectVersion, webAppProjectVersion])
+  }), [])
   const {isMobile} = useIsMobile()
   const [viewAnyway, setViewAnyway] = useState(false)
   if ((!viewAnyway) && (isMobile) && (window.location.pathname !== '/') && (window.location.pathname !== '/home')) {
@@ -84,7 +80,6 @@ const FigurlApp: FunctionComponent<Props> = ({
           <GithubAuthSetup>
             <FigurlSetup localMode={localMode}>
               <MainWindow
-                packageName={packageName}
                 logo={logo}
                 homePageProps={homePageProps}
                 hide={hide}

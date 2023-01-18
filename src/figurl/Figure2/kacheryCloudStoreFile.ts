@@ -1,9 +1,9 @@
 import axios from 'axios';
 import { signMessage } from 'commonInterface/crypto/signatures';
 import { sha1OfString } from 'commonInterface/kacheryTypes';
-import { sleepMsec } from 'kacheryCloudTasks/PubsubSubscription';
 import { FinalizeFileUploadRequest, InitiateFileUploadRequest, InitiateFileUploadResponse, isFinalizeFileUploadResponse, isInitiateFileUploadResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
+import sleepMsec from './sleepMsec';
 
 const kacheryCloudStoreFile = async (fileData: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken? : string}, zone: string): Promise<string> => {
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
