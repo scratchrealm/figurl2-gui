@@ -6,6 +6,8 @@ import GitHubAccessControl from 'figurl/GitHubAccessWindow/GitHubAccessControl';
 import { useGithubAuth } from 'GithubAuth/useGithubAuth';
 import { FunctionComponent, useCallback, useMemo, useState } from 'react';
 import GitHubLoginWindow from '../GitHub/GitHubLoginWindow';
+import LocalKacheryControl from './LocalKacheryControl';
+import LocalKacheryDialog from './LocalKacheryDialog';
 import SaveFigureControl from './SaveFigureControl';
 import SaveFigureDialog from './SaveFigureDialog';
 
@@ -39,6 +41,7 @@ export const useModalDialog = () => {
 
 const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height, figureInterface }) => {
     const {visible: saveFigureVisible, handleOpen: openSaveFigure, handleClose: closeSaveFigure} = useModalDialog()
+    const {visible: localKacheryVisible, handleOpen: openLocalKachery, handleClose: closeLocalKachery} = useModalDialog()
     const {visible: githubAccessWindowVisible, handleOpen: openGitHubAccessWindow, handleClose: closeGitHubAccessWindow} = useModalDialog()
 
     const {routePath} = useRoute2()
@@ -60,6 +63,14 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     {
                         routePath === '/f' && (
                             <span style={{paddingBottom: 0, color: 'white'}}>
+                                <LocalKacheryControl onClick={openLocalKachery} color="white" />
+                            </span>
+                        )
+                    }
+
+                    {
+                        routePath === '/f' && (
+                            <span style={{paddingBottom: 0, color: 'white'}}>
                                 <SaveFigureControl onClick={openSaveFigure} color="white" />
                             </span>
                         )
@@ -77,6 +88,14 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                 
                 </Toolbar>
             </AppBar>
+            <ModalWindow
+                open={localKacheryVisible}
+                onClose={closeLocalKachery}
+            >
+                <LocalKacheryDialog
+                    onClose={closeLocalKachery}
+                />
+            </ModalWindow>
             <ModalWindow
                 open={saveFigureVisible}
                 onClose={closeSaveFigure}

@@ -1,11 +1,12 @@
 import axios from 'axios';
+import { Buffer } from 'buffer';
 import { signMessage } from 'commonInterface/crypto/signatures';
 import { isBoolean, isEqualTo, isNodeId, isNumber, isSignature, isString, NodeId, optional, Signature, _validateObject } from 'commonInterface/kacheryTypes';
 import * as crypto from 'crypto';
+import { localKacheryServerBaseUrl, localKacheryServerIsAvailable, localKacheryServerIsEnabled } from 'figurl/MainWindow/ApplicationBar/LocalKacheryDialog';
 import { FindFileRequest, isFindFileResponse } from './GatewayRequest';
 import { getKacheryCloudClientInfo } from './getKacheryCloudClientInfo';
 import loadLocalSha1TextFile from './loadLocalSha1TextFile';
-import { Buffer } from 'buffer';
 
 export type FindIpfsFileRequest = {
     payload: {
@@ -109,11 +110,13 @@ const ipfsDownload = async (cid: string) => {
     return y.data
 }
 
+(window as any).process = (window as any).process || {nextTick: () => {}}
+
 export const fileDownload = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, onProgress: (a: {loaded: number, total: number}) => void, githubAuth: {userId?: string, accessToken?: string}, zone: string, o: {localMode: boolean, parseJson: boolean}) => {
     const {localMode} = o
     console.info(`${localMode ? "Local" : "Cloud"}: ${hashAlg}/${hash}`)
     if (!localMode) {
-        const {url: downloadUrl, size} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl, githubAuth, zone) || {}
+        const {url: downloadUrl, size, foundLocally} = await fileDownloadUrl(hashAlg, hash, kacheryGatewayUrl, githubAuth, zone) || {}
         if (!downloadUrl) {
             throw Error(`Unable to find file in kachery cloud: ${hashAlg}://${hash}`)
         }
@@ -157,6 +160,15 @@ export const fileDownload = async (hashAlg: string, hash: string, kacheryGateway
             }
         }
         const data = Buffer.concat(chunks)
+        const doStoreLocally = ((localKacheryServerIsEnabled()) && (!foundLocally) && (await localKacheryServerIsAvailable({retry: false})) && (hashAlg === 'sha1'))
+        if (doStoreLocally) {
+            // note: I tried doing this via streaming, but had a terrible time getting it to work by posting chunks. Tried both axios and fetch.
+            console.info(`STORING CONTENT LOCALLY: ${hashAlg}/${hash}`)
+            await fetch(`${localKacheryServerBaseUrl}/upload/${hashAlg}/${hash}`, {
+                body: data,
+                method: 'POST'
+            })
+        }
         const txt = new TextDecoder().decode(data)
         if (o.parseJson) {
             let ret: string
@@ -171,77 +183,8 @@ export const fileDownload = async (hashAlg: string, hash: string, kacheryGateway
         }
         else return txt
 
-        // having problem with http and CORS - switching to fetch
-
-        // // having trouble with axios and streams (doesn't want to return a stream even when returnType='stream')
-        // return new Promise((resolve, reject) => {
-        //     http.get(downloadUrl, response => {
-        //         const chunks: Uint8Array[] = []
-        //         const shasum = crypto.createHash('sha1')
-        //         let numBytesDownloaded = 0
-                
-        //         response.on('data', (chunk: Uint8Array) => {
-        //             numBytesDownloaded += chunk.byteLength
-        //             shasum.update(chunk)
-        //             chunks.push(chunk)
-        //             if (onProgress) {
-        //                 const loaded = numBytesDownloaded
-        //                 const total = parseInt(response.headers['content-length'] || '0')
-        //                 const elapsedSec = (Date.now() - timestampProgress) / 1000
-        //                 if ((elapsedSec >= 0.5) || (firstProgress)) {
-        //                     onProgress({loaded, total})
-        //                     timestampProgress = Date.now()
-        //                     firstProgress = false
-        //                 }
-        //             }
-        //         })
-        //         response.on('end', () => {
-        //             const computedSha1 = shasum.digest('hex')
-        //             if (hashAlg === 'sha1') {
-        //                 if (computedSha1 !== hash) {
-        //                     reject(`Invalid sha1 of downloaded file: ${computedSha1} <> ${hash}`)
-        //                     return
-        //                 }
-        //             }
-        //             const data = Buffer.concat(chunks)
-        //             const txt = new TextDecoder().decode(data)
-        //             if (o.parseJson) {
-        //                 let ret: string
-        //                 try {
-        //                     ret = JSON.parse(txt)
-        //                 }
-        //                 catch {
-        //                     console.warn(txt)
-        //                     reject('Problem parsing JSON')
-        //                     return
-        //                 }
-        //                 resolve(ret)
-        //             }
-        //             else resolve(txt)
-        //         })
-        //         response.on('error', err => {
-        //             reject(err)
-        //         })
-        //     })
-        // })
-
-        // see comment above about axios
-        // const y = await axios.get(downloadUrl, {
-        //     responseType: 'json',
-        //     onDownloadProgress: (event) => {
-        //         if (onProgress) {
-        //             const loaded: number = event.loaded
-        //             const total: number = event.total
-        //             const elapsedSec = (Date.now() - timestampProgress) / 1000
-        //             if ((elapsedSec >= 0.5) || (firstProgress)) {
-        //                 onProgress({loaded, total})
-        //                 timestampProgress = Date.now()
-        //                 firstProgress = false
-        //             }
-        //         }
-        //     }
-        // })
-        // return y.data
+        // had problem with http and CORS - switching to fetch
+        // had trouble with axios and streams (doesn't want to return a stream even when returnType='stream')
     }
     else {
         if (hashAlg !== 'sha1') throw Error(`Invalid hashAlg ${hashAlg} for local file`)
@@ -278,7 +221,43 @@ export const ipfsDownloadUrl = async (cid: string): Promise<string> => {
     return downloadUrl
 }
 
-export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken?: string}, zone: string): Promise<{url: string, size?: number} | undefined> => {
+const getFileDownloadUrlForLocalKacheryServer = async (hashAlg: string, hash: string): Promise<{url: string, size: number} | undefined> => {
+    if (!(await localKacheryServerIsAvailable({retry: false}))) {
+        return undefined
+    }
+    if (hashAlg !== 'sha1') {
+        return undefined
+    }
+    const url = `${localKacheryServerBaseUrl}/sha1/${hash}`
+    let resp
+    try {
+        resp = await axios.head(url)
+    }
+    catch(err) {
+        return undefined
+    }
+    if (resp.status === 200) {
+        const size = parseInt(resp.headers['content-length'])
+        console.info(`Found locally: ${hashAlg}/${hash}`)
+        return {url, size}
+    }
+    else {
+        return undefined
+    }
+}
+
+export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGatewayUrl: string, githubAuth: {userId?: string, accessToken?: string}, zone: string): Promise<{url: string, size?: number, foundLocally: boolean} | undefined> => {
+    if ((localKacheryServerIsEnabled()) && (await localKacheryServerIsAvailable({retry: false}))) {
+        const rrr = await getFileDownloadUrlForLocalKacheryServer(hashAlg, hash)
+        if (rrr) {
+            return {
+                url: rrr.url,
+                size: rrr.size,
+                foundLocally: true
+            }
+        }
+    }
+
     const {clientId, keyPair} = await getKacheryCloudClientInfo()
     const url = `${kacheryGatewayUrl}/api/gateway`
     // const url = 'http://localhost:3001/api/kacherycloud'
@@ -306,7 +285,8 @@ export const fileDownloadUrl = async (hashAlg: string, hash: string, kacheryGate
     if ((resp.found) && (resp.url)) {
         return {
             url: resp.url,
-            size: resp.size
+            size: resp.size,
+            foundLocally: false
         }
     }
     else {
