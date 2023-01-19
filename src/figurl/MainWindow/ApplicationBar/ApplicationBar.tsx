@@ -61,11 +61,9 @@ const ApplicationBar: FunctionComponent<Props> = ({ title, logo, onHome, height,
                     <span style={{marginLeft: 'auto'}} />
                     
                     {
-                        routePath === '/f' && (
-                            <span style={{paddingBottom: 0, color: 'white'}}>
-                                <LocalKacheryControl onClick={openLocalKachery} color="white" />
-                            </span>
-                        )
+                        <span style={{paddingBottom: 0, color: 'white'}}>
+                            <LocalKacheryControl onClick={openLocalKachery} />
+                        </span>
                     }
 
                     {

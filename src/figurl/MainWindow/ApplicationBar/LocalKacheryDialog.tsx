@@ -68,7 +68,7 @@ const LocalKacheryDialog: FunctionComponent<Props> = ({onClose}) => {
                 for figures.
             </p>
             <ul>
-                <li>Step 1: <a href="https://github.com/scratchrealm/kachery-local-server" target="_blank" rel="noreferrer">Run a local Kachery server on this computer.</a></li>
+                <li>Step 1: <a href="https://github.com/scratchrealm/kachery-local-server/blob/main/README.md" target="_blank" rel="noreferrer">Run a local Kachery server on this computer.</a></li>
                 <li>Step 2: Check the box below to enable this feature.</li>
                 <li>Step 3: Reload this page.</li>
             </ul>

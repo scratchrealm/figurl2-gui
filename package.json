@@ -19,11 +19,9 @@
     "assert": "npm:assert-browserify",
     "async-mutex": "^0.3.2",
     "axios": "^0.21.1",
-    "bson": "^4.6.0",
     "buffer": "^6.0.3",
     "crypto": "npm:crypto-browserify",
     "file-saver": "^2.0.5",
-    "github-markdown-css": "^5.0.0",
     "idb-keyval": "^6.2.0",
     "octokit": "^2.0.10",
     "original-fs": "^1.1.0",
@@ -35,7 +33,6 @@
     "react-markdown": "^4.3.1",
     "react-router-dom": "^6.6.2",
     "react-scripts": "^5.0.1",
-    "react-syntax-highlighter": "^15.4.5",
     "stream": "npm:stream-browserify",
     "typescript": "^4.1.2",
     "url": "^0.11.0",
@@ -43,6 +40,7 @@
     "winston": "^3.3.3"
   },
   "scripts": {
+    "analyze": "source-map-explorer 'build/static/js/*.js'",
     "start": "BROWSER=none react-scripts start",
     "build": "CI=false react-scripts build",
     "test": "react-scripts test",
@@ -66,6 +64,7 @@
     "@types/pako": "^2.0.0",
     "@types/react-router-dom": "^5.3.3",
     "@types/react-syntax-highlighter": "^13.5.2",
+    "source-map-explorer": "^2.5.3",
     "tweetnacl": "^1.0.3",
     "vercel": "^22.0.1"
   }
