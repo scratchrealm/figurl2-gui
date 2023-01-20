@@ -1,5 +1,6 @@
-import { Button, Checkbox } from '@material-ui/core';
+import { Checkbox } from '@material-ui/core';
 import axios from 'axios';
+import Hyperlink from 'components/Hyperlink/Hyperlink';
 import { FunctionComponent, useCallback, useEffect, useState } from 'react';
 
 type Props = {
@@ -64,11 +65,11 @@ const LocalKacheryDialog: FunctionComponent<Props> = ({onClose}) => {
         <div style={{overflowY: 'auto'}}>
             <h2>Connect to local Kachery server</h2>
             <p>
-                Connecting to a local Kachery server can dramatically speed up the loading of data
+                Connecting to a local Kachery server can dramatically speed up the loading of large data files
                 for figures.
             </p>
             <ul>
-                <li>Step 1: <a href="https://github.com/scratchrealm/kachery-local-server/blob/main/README.md" target="_blank" rel="noreferrer">Run a local Kachery server on this computer.</a></li>
+                <li>Step 1: Run a local Kachery server on this computer (see below)</li>
                 <li>Step 2: Check the box below to enable this feature.</li>
                 <li>Step 3: Reload this page.</li>
             </ul>
@@ -78,12 +79,12 @@ const LocalKacheryDialog: FunctionComponent<Props> = ({onClose}) => {
             <div>
                 {
                     isAvailable ? (
-                        <span style={{color: 'green'}}>Local server is available</span>
+                        <span style={{color: 'green'}}>Local server is available.</span>
                     ) : (
-                        <span style={{color: 'red'}}>Local server is not available</span>
+                        <span style={{color: 'red'}}>Local server is not available.</span>
                     )
                 }
-                <Button onClick={() => setRefreshCode(c => (c + 1))}>Retry</Button>
+                &nbsp;&nbsp;&nbsp;<Hyperlink onClick={() => setRefreshCode(c => (c + 1))}>Retry</Hyperlink>
             </div>
 
             {
@@ -93,6 +94,17 @@ const LocalKacheryDialog: FunctionComponent<Props> = ({onClose}) => {
                     </div>
                 )
             }
+
+            <h3>Running a local Kachery server</h3>
+
+            <p>
+                To run a local Kachery server, install a recent version of <a href="https://nodejs.dev/en/learn/how-to-install-nodejs/" target="_blank" rel="noreferrer">NodeJS</a>. Then run the following command and keep the terminal open.
+            </p>
+
+            <pre>npx kachery-local-server@latest serve</pre>
+
+            <p>For more information, see <a href="https://github.com/scratchrealm/kachery-local-server/blob/main/README.md" target="_blank" rel="noreferrer">kachery-local-server</a>.
+            </p>
 
             <h2>How it works</h2>
             <p>
